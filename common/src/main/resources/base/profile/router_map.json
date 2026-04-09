@@ -1,0 +1,12 @@
+{
+  "routerMap": [
+    {
+      "name": "ecy://common/web",
+      "pageSourceFile": "src/main/ets/functions/webview/pages/WebViewPage.ets",
+      "buildFunction": "WebViewPageBuilder",
+      "data": {
+        "description": "webview"
+      }
+    }
+  ]
+}
