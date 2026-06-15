@@ -81,7 +81,7 @@ export struct WebViewPage {
       const params = context.pathInfo.param as Record<string, string>
       const src = params?.src
       // 校验 src 为 http(s) 链接，避免加载空串 / 非法地址
-      if (src && src.startsWith('http')) {
+      if (src && (src.startsWith('http://') || src.startsWith('https://'))) {
         this.src = src
       } else {
         hilog.error(DOMAIN, TAG, `onReady 缺少有效 src：${src}`);

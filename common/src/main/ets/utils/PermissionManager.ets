@@ -2,7 +2,6 @@ import { abilityAccessCtrl, bundleManager, Permissions } from '@kit.AbilityKit'
 import { AppStorageV2 } from '@kit.ArkUI'
 import { GlobalState } from '../functions'
 import { hilog } from '@kit.PerformanceAnalysisKit'
-import { BusinessError } from '@kit.BasicServicesKit'
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'PermissionManager';

@@ -88,7 +88,7 @@ export class UserManager {
    * @returns 登录结果
    */
   async login(phone: string, code: string): Promise<void> {
-    const res = await NetManager.getInstance().request({
+    const res = await NetManager.getInstance().request<string>({
       method: 'post',
       url: 'login',
       data: {
@@ -98,7 +98,7 @@ export class UserManager {
     })
     if (res.code === 200) {
       // 演示占位：直接把 data 当 token 字符串。接入真实后端时应校验/解析返回结构
-      this.setToken(res.data as string)
+      this.setToken(res.data)
       try {
         this.userModel = await this.getUserInfo(true)
         if (this.userModel) {
@@ -133,7 +133,7 @@ export class UserManager {
     if (this.userModel && !refresh) {
       return this.userModel
     }
-    let res = await NetManager.getInstance().request({
+    let res = await NetManager.getInstance().request<UserModel>({
       method: 'post',
       url: 'getUserInfo',
     })
@@ -151,22 +151,27 @@ export class UserManager {
    * @returns
    */
   async logout(): Promise<void> {
-    let res = await NetManager.getInstance().request({
-      method: 'post',
-      url: 'logout',
-    })
-    if (res.code === 200) {
-      this.userModel = undefined
-      this.setToken('')
-      this.listeners.forEach((item) => {
-        try {
-          item.onLogout?.()
-        } catch (e) {
-          hilog.error(DOMAIN, TAG, `onLogout listener ：${e?.message}`);
-        }
+    try {
+      const res = await NetManager.getInstance().request({
+        method: 'post',
+        url: 'logout',
       })
-    } else {
-      return Promise.reject(new Error(`logout failed: code=${res.code}`))
+      if (res.code !== 200) {
+        hilog.warn(DOMAIN, TAG, `logout 服务端返回非 200：code=${res.code}`);
+      }
+    } catch (e) {
+      // 网络异常时仍清理本地状态，避免用户无法退出
+      hilog.warn(DOMAIN, TAG, `logout 网络异常，清理本地状态：${e?.message}`);
     }
+    // 无论服务端是否成功，都清理本地登录态
+    this.userModel = undefined
+    this.setToken('')
+    this.listeners.forEach((item) => {
+      try {
+        item.onLogout?.()
+      } catch (e) {
+        hilog.error(DOMAIN, TAG, `onLogout listener ：${e?.message}`);
+      }
+    })
   }
 }

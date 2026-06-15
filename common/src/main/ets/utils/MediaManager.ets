@@ -79,6 +79,7 @@ export class MediaManager {
       surfaceID: config.surfaceID,
       audioRendererInfo: config.audioRendererInfo
     })
+    // 先赋值 onChange，再注册事件回调，避免 initCallback 内同步触发的事件丢失
     ins.onChange = config.onChange
     ins.initCallback()
     return ins

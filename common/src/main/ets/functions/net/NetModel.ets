@@ -1,10 +1,10 @@
 /**
  * 统一返回类
  */
-export interface ResponseModel {
+export interface ResponseModel<T = ESObject> {
   message: string
   code: number
-  data: ESObject
+  data: T
 }
 
 /**

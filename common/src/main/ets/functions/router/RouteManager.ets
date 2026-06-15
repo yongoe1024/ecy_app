@@ -106,7 +106,7 @@ export class RouteManager {
       return
     }
     // web页面
-    if (options.url.startsWith("http")) {
+    if (options.url.startsWith('http://') || options.url.startsWith('https://')) {
       // 打开Web
       this.pageStack?.pushDestinationByName(RouteTable.COMMON_WEB, { src: options.url }, (popInfo: PopInfo) => {
         options?.onPop?.(popInfo)

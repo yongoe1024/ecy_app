@@ -1,4 +1,3 @@
-import { IBestToast } from "@ibestservices/ibest-ui-v2";
 import axios, {
   AxiosError,
   AxiosInstance,
@@ -48,9 +47,7 @@ export class NetManager {
       this.logResponse(response)
       return response.data
     }, (error: AxiosError) => {
-      // 对响应错误做点什么：开发环境暴露原始信息便于排查，线上给用户友好提示
-      IBestToast.show(this.isDebug ? error.message : '网络异常，请稍后重试')
-      // 打印所有请求的错误响应信息
+      // 对响应错误做点什么：仅记录日志，Toast 由调用方按需展示
       this.logError(error)
       return Promise.reject(error);
     });
@@ -68,8 +65,8 @@ export class NetManager {
    * @param config axios配置
    * @returns 请求结果，只要服务器返回，都算成功，网络错误走catch
    */
-  request(config: AxiosRequestConfig): Promise<ResponseModel> {
-    return this.axiosInstance.request<ResponseModel, ResponseModel>(config)
+  request<T = ESObject>(config: AxiosRequestConfig): Promise<ResponseModel<T>> {
+    return this.axiosInstance.request<ResponseModel<T>, ResponseModel<T>>(config)
   }
 
   private logRequest(config: InternalAxiosRequestConfig): void {
@@ -132,12 +129,17 @@ export class NetManager {
   }
 
   /**
-   * 下载，仅能下载到cacheDir目录,已存在会下载失败
+   * 下载到 cacheDir 目录；目标文件已存在时先删除，避免下载失败
+   * @throws BusinessError
    * @param context 上下文
    * @param params 下载参数
    * @returns ResponseModel
    */
   async download(context: Context, params: DownloadParams): Promise<ResponseModel> {
+    // 目标文件已存在时先删除，避免 axios 下载失败
+    if (fileIo.accessSync(params.filePath)) {
+      fileIo.unlinkSync(params.filePath)
+    }
     return this.request({
       url: params.url,
       method: 'get',

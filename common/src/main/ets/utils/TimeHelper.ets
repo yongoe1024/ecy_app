@@ -119,4 +119,11 @@ export class TimeHelper {
     this.tick();
     this.startInterval();
   }
+
+  /** 销毁实例：停止计时并清空回调引用，避免泄漏。页面 aboutToDisappear 中应调用。 */
+  destroy(): void {
+    this.stop();
+    this.onTick = undefined;
+    this.onReachLimit = undefined;
+  }
 }

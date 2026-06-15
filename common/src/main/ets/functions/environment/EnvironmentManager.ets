@@ -9,7 +9,9 @@ const TAG: string = 'EnvironmentManager';
 
 // deveco虚拟机网关
 const DEV_BASE_URL = 'http://10.0.2.2:8080'
+// TODO: 替换为真实生产环境地址
 const PRD_BASE_URL = 'https://myprod.com'
+// TODO: 替换为真实测试环境地址
 const TEST_BASE_URL = 'https://mytest.com'
 
 /**

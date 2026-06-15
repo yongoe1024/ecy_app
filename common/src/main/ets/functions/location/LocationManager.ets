@@ -90,6 +90,7 @@ export class LocationManager {
       return Promise.reject(new Error('uiAbilityContext 未初始化，无法打开定位开关'))
     }
     let atManager: abilityAccessCtrl.AtManager = abilityAccessCtrl.createAtManager();
+    // 返回值即开关的最终状态：用户未开启时为 false，需如实透传给 checkAndRequest
     return atManager.requestGlobalSwitch(context, abilityAccessCtrl.SwitchType.LOCATION)
   }
 }
