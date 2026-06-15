@@ -24,6 +24,14 @@ export class TimeHelper {
   private onTick?: Callback<number>
   private onReachLimit?: Callback<void>
 
+  /** 把毫秒格式化为 mm:ss，负值按 0 处理。供计时/媒体等场景复用。 */
+  static formatClock(ms: number): string {
+    const totalSeconds = ms > 0 ? Math.floor(ms / 1000) : 0
+    const minute = Math.floor(totalSeconds / 60).toString().padStart(2, '0')
+    const second = (totalSeconds % 60).toString().padStart(2, '0')
+    return `${minute}:${second}`
+  }
+
   public setMaxTimeMs(value: number) {
     this.maxTimeMs = value;
   }

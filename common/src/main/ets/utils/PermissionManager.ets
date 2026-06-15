@@ -1,6 +1,10 @@
 import { abilityAccessCtrl, bundleManager, Permissions } from '@kit.AbilityKit'
 import { AppStorageV2 } from '@kit.ArkUI'
 import { GlobalState } from '../functions'
+import { hilog } from '@kit.PerformanceAnalysisKit'
+
+const DOMAIN: number = 0x0000;
+const TAG: string = 'PermissionManager';
 
 /**
  * 权限管理类
@@ -70,8 +74,13 @@ export class PermissionManager {
    */
   private static async showDialog(failStr: string): Promise<void> {
     const state = AppStorageV2.connect(GlobalState)!;
+    // windowStage 尚未就绪时无法弹窗，显式记录而非静默失败
+    if (!state.windowStage) {
+      hilog.error(DOMAIN, TAG, 'showDialog 失败：windowStage 未初始化');
+      return
+    }
     // 使用鸿蒙的对话框组件
-    const result = await state.windowStage?.getMainWindowSync()
+    const result = await state.windowStage.getMainWindowSync()
       .getUIContext()
       .getPromptAction()
       .showDialog({

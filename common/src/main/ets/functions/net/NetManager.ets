@@ -13,7 +13,7 @@ import { DownloadParams, ResponseModel, UploadParams } from "./NetModel";
 import { fileIo } from "@kit.CoreFileKit";
 import { util } from "@kit.ArkTS";
 import { EnvEnum } from "../environment/GlobalModel";
-import { EnvironmentManger } from "../environment/EnvironmentManger";
+import { EnvironmentManager } from "../environment/EnvironmentManager";
 import { hilog } from "@kit.PerformanceAnalysisKit";
 
 const DOMAIN: number = 0x0000;
@@ -25,11 +25,11 @@ const TAG: string = 'NetManager';
 export class NetManager {
   private static instance: NetManager
   private axiosInstance: AxiosInstance
-  private readonly isDebug: boolean = EnvironmentManger.getInstance().getEnv() === EnvEnum.DEV
+  private readonly isDebug: boolean = EnvironmentManager.getInstance().getEnv() === EnvEnum.DEV
 
   private constructor() {
     this.axiosInstance = axios.create({
-      baseURL: EnvironmentManger.getInstance().getBaseUrl(),
+      baseURL: EnvironmentManager.getInstance().getBaseUrl(),
       timeout: 5000,
     })
     // 添加请求拦截器

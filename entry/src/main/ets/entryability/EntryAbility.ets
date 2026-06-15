@@ -2,7 +2,7 @@ import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.Ab
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AppStorageV2, window } from '@kit.ArkUI';
 import { IBestInit } from '@ibestservices/ibest-ui-v2/Index';
-import { EnvEnum, EnvironmentManger, GlobalState, PreferenceManager, RouteManager, } from 'common';
+import { EnvEnum, EnvironmentManager, GlobalState, PreferenceManager, RouteManager, } from 'common';
 import { webview } from '@kit.ArkWeb';
 
 const DOMAIN = 0x0000;
@@ -10,30 +10,49 @@ const TAG = 'EntryAbility'
 
 export default class EntryAbility extends UIAbility {
   globalState = AppStorageV2.connect(GlobalState)!;
+  // 持有主窗口引用，便于在 onWindowStageDestroy 中反注册监听
+  private mainWindow?: window.Window
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     this.globalState.uiAbilityContext = this.context
     this.globalState.wantParameters = want.parameters
-    if (want.parameters && want.parameters.toUrl) {
-      RouteManager.getInstance().push({ url: want.parameters.toUrl + '' })
-    }
+    // 深链推迟到内容加载且隐私已同意后处理，避免绕过隐私门 / 早于 Navigation 挂载
     try {
       this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
     }
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onCreate');
-    if (EnvironmentManger.getInstance().getEnv() === EnvEnum.DEV) {
+    if (EnvironmentManager.getInstance().getEnv() === EnvEnum.DEV) {
       webview.WebviewController.setWebDebuggingAccess(true);
     }
   }
 
   onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     this.globalState.wantParameters = want.parameters
-    if (want.parameters && want.parameters.toUrl) {
-      RouteManager.getInstance().push({ url: want.parameters.toUrl + '' })
-    }
+    // 应用已在运行，Navigation 已挂载，可直接处理深链（内部仍校验隐私同意）
+    this.handleDeepLink()
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onNewWant');
+  }
+
+  /**
+   * 处理 want 携带的深链（热启动场景）：仅在已同意隐私后跳转，避免绕过隐私门。
+   * 冷启动由 Index 页面在导航挂载后消费，见 Index.aboutToAppear。
+   */
+  private handleDeepLink(): void {
+    try {
+      if (!PreferenceManager.hasSync('agreePrivacy')) {
+        return
+      }
+    } catch (e) {
+      return
+    }
+    const params = this.globalState.wantParameters
+    if (params && params.toUrl) {
+      RouteManager.getInstance().push({ url: String(params.toUrl) })
+      // 消费后清空，避免重复跳转
+      this.globalState.wantParameters = undefined
+    }
   }
 
   onDestroy(): void {
@@ -70,6 +89,15 @@ export default class EntryAbility extends UIAbility {
   }
 
   onWindowStageDestroy(): void {
+    // 反注册窗口监听，避免泄漏
+    try {
+      this.mainWindow?.off('avoidAreaChange')
+      this.mainWindow?.off('windowSizeChange')
+      this.mainWindow?.off('keyboardHeightChange')
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `off window listeners ：${e.code} ${e.message}`);
+    }
+    this.mainWindow = undefined
     this.globalState.windowStage = undefined;
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onWindowStageDestroy');
   }
@@ -87,6 +115,7 @@ export default class EntryAbility extends UIAbility {
    */
   updateWinInfo(windowClass: window.Window) {
     try {
+      this.mainWindow = windowClass
       let uiContext = windowClass.getUIContext()
       // 设置窗口全屏
       windowClass.setWindowLayoutFullScreen(true)

@@ -1,7 +1,7 @@
 // environment
 export * from './environment/GlobalModel'
 
-export * from './environment/EnvironmentManger'
+export * from './environment/EnvironmentManager'
 
 // location
 export * from './location/LocationManager'

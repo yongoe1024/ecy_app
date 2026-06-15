@@ -28,14 +28,21 @@ struct Main {
 
   build() {
     NavDestination() {
-      Tabs({ index: this.selectIndex!! }) {
+      Tabs({ index: this.selectIndex }) {
 
         TabContent() {
           Home()
         }
 
         TabContent() {
-          // Shop()
+          Column() {
+            Text('购物模块占位')
+              .fontSize(16)
+              .fontColor('#999')
+          }
+          .width('100%')
+          .height('100%')
+          .justifyContent(FlexAlign.Center)
         }
 
         TabContent() {
@@ -45,6 +52,9 @@ struct Main {
       .layoutWeight(1)
       .barHeight(0)
       .edgeEffect(EdgeEffect.Fade)
+      .onChange((index: number) => {
+        this.selectIndex = index
+      })
 
       Row({ space: 30 }) {
         this.tabBar('首页', $r("app.media.entry_ic_main_home"), $r("app.media.entry_ic_main_home_active"), 0)

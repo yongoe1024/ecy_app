@@ -1,4 +1,4 @@
-import { IBestButton } from "@ibestservices/ibest-ui-v2"
+import { IBestButton, IBestToast } from "@ibestservices/ibest-ui-v2"
 import { GlobalState, PreferenceManager } from "common"
 import { AppStorageV2, router } from "@kit.ArkUI"
 import { common } from "@kit.AbilityKit"
@@ -6,6 +6,9 @@ import { hilog } from "@kit.PerformanceAnalysisKit";
 
 const DOMAIN = 0x0000;
 const TAG = 'PrivacyPage'
+// TODO: 替换为真实的协议页面或链接（建议接入 WebViewPage / 内置协议页）
+const SERVICE_AGREEMENT_URL: string = ''
+const PRIVACY_POLICY_URL: string = ''
 
 @Entry
 @ComponentV2
@@ -133,7 +136,8 @@ struct PrivacyPage {
                   .fontColor('#2563EB')
                   .decoration({ type: TextDecorationType.Underline, color: '#2563EB' })
                   .onClick(() => {
-                    // todo 协议跳转占位
+                    // TODO: 接入后跳转《ECY-APP服务协议》(SERVICE_AGREEMENT_URL)
+                    IBestToast.show('协议页面待接入')
                   })
 
                 Span(' 与 ')
@@ -146,7 +150,8 @@ struct PrivacyPage {
                   .fontColor('#2563EB')
                   .decoration({ type: TextDecorationType.Underline, color: '#2563EB' })
                   .onClick(() => {
-                    // todo 协议跳转占位
+                    // TODO: 接入后跳转《隐私政策》(PRIVACY_POLICY_URL)
+                    IBestToast.show('协议页面待接入')
                   })
 
                 Span('。')

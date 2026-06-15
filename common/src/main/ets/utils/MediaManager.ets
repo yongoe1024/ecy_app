@@ -118,16 +118,30 @@ export class MediaManager {
         this.state.index = index
         if (index < 0 || index >= this.state.mediaList.length) {
           this.state.index = -1
-          resolve()
+          this.settle()
           return
         }
         if (this.state.index >= 0 && this.state.mediaList.length > 0) {
           await this.setUrl(this.state.mediaList[this.state.index])
         }
       } catch (e) {
-        reject(e)
+        this.settle(e)
       }
     })
+  }
+
+  /**
+   * 统一结算 setAndPrepare 返回的 Promise，确保只调用一次并清空引用，
+   * 避免 prepare/error 失败时外层 Promise 永远挂起。
+   */
+  private settle(err?: BusinessError): void {
+    if (err) {
+      this.reject?.(err)
+    } else {
+      this.resolve?.()
+    }
+    this.resolve = undefined
+    this.reject = undefined
   }
 
   /**
@@ -201,10 +215,12 @@ export class MediaManager {
           }
           this.avPlayer.prepare()
             .then(() => {
-              this.resolve?.()
+              this.settle()
             })
             .catch((e: BusinessError) => {
               hilog.error(DOMAIN, TAG, `initialized - prepare ：${e.code} ${e.message}`);
+              // 关键修复：prepare 失败必须结算 Promise，否则 setAndPrepare 永久挂起
+              this.settle(e)
             })
             .finally(() => {
               this.onChange?.(this.state)
@@ -271,6 +287,8 @@ export class MediaManager {
     // 必要事件，idle状态下、未调用设置资源接口前完成设置监听
     this.avPlayer.on('error', (e: BusinessError) => {
       hilog.error(DOMAIN, TAG, `error ：${e.code} ${e.message}`);
+      // 若有挂起的 setAndPrepare，结算它，避免调用方卡死
+      this.settle(e)
       this.avPlayer.reset().catch(() => {
         hilog.error(DOMAIN, TAG, `error：${e.code} ${e.message}`);
       });

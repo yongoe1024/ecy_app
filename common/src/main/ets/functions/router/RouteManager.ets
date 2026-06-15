@@ -2,6 +2,7 @@ import { RouterParams } from "./RouterModel";
 import { RouteTable } from "./RouteTable";
 import { UserManager } from '../user/UserManager';
 import { uri } from '@kit.ArkTS';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { IBestToast } from "@ibestservices/ibest-ui-v2";
 
 /**
@@ -59,7 +60,10 @@ export class RouteManager {
   public push(options: RouterParams): void {
     // 需要登录
     if (options?.needLogin && !UserManager.getInstance().getToken()) {
-      this.pageStack?.pushPathByName(RouteTable.ENTRY_LOGIN, undefined, true)
+      this.pageStack?.pushDestinationByName(RouteTable.MINE_LOGIN, undefined, true)
+        .catch((e: BusinessError) => {
+          IBestToast.show('登录页面不存在')
+        })
       return
     }
     // web页面
@@ -74,7 +78,14 @@ export class RouteManager {
       // 解析问号传参
       const uriInstance = new uri.URI(options.url);
       const paramNames = uriInstance.getQueryNames();
-      let params = options.params ?? {}
+      // 浅拷贝，避免改写调用方传入的 params 对象（ArkTS 不支持对象展开）
+      let params: Record<string, ESObject> = {}
+      const sourceParams = options.params
+      if (sourceParams) {
+        Object.keys(sourceParams).forEach((key: string) => {
+          params[key] = sourceParams[key]
+        })
+      }
       paramNames.forEach(item => {
         let value = uriInstance.getQueryValue(item)
         params[item] = value

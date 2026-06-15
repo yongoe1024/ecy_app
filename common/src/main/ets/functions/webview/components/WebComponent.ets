@@ -20,6 +20,11 @@ export struct WebComponent {
   // 进度条
   @Param loadProgress: number = 0
   @Event $loadProgress: Callback<number>
+  // 安全相关能力默认按需开启：加载任意外链时应谨慎放开
+  // JS 与 DOM 存储多数页面需要，默认开启；定位较敏感，默认关闭
+  @Param javaScriptAccess: boolean = true
+  @Param domStorageAccess: boolean = true
+  @Param geolocationAccess: boolean = false
 
   build() {
     Web({
@@ -28,9 +33,9 @@ export struct WebComponent {
     })
       .width('100%')
       .height('100%')
-      .javaScriptAccess(true)//允许javascript
-      .domStorageAccess(true)//允许dom存放数据
-      .geolocationAccess(true)//允许定位
+      .javaScriptAccess(this.javaScriptAccess)//允许javascript
+      .domStorageAccess(this.domStorageAccess)//允许dom存放数据
+      .geolocationAccess(this.geolocationAccess)//允许定位
       .cacheMode(CacheMode.Online)//设置缓存模式
       .overScrollMode(OverScrollMode.NEVER)
       .onPageEnd(() => {

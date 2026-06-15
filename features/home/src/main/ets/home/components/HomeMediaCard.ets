@@ -1,4 +1,5 @@
-import { MediaManager, MediaState, PlayMode } from 'common'
+import { MediaManager, MediaState, PlayMode, TimeHelper } from 'common'
+import { IBestToast } from '@ibestservices/ibest-ui-v2'
 import { SectionCard } from '../SectionCard'
 
 const DEMO_AUDIO: string = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
@@ -17,7 +18,7 @@ export struct HomeMediaCard {
         onChange: (state: MediaState) => {
           this.mediaReady = true
           this.mediaSummary =
-            `索引 ${state.index} | ${this.formatMs(state.time)} / ${this.formatMs(state.duration)} | ${state.isPlay ?
+            `索引 ${state.index} | ${TimeHelper.formatClock(state.time)} / ${TimeHelper.formatClock(state.duration)} | ${state.isPlay ?
               '播放中' : '暂停'}`
         }
       })
@@ -33,13 +34,6 @@ export struct HomeMediaCard {
     void this.mediaManager?.clear()
   }
 
-  formatMs(value: number): string {
-    const safeValue = value > 0 ? Math.floor(value / 1000) : 0
-    const minute = Math.floor(safeValue / 60).toString().padStart(2, '0')
-    const second = (safeValue % 60).toString().padStart(2, '0')
-    return `${minute}:${second}`
-  }
-
   @LocalBuilder
   cardContent() {
     Text(this.mediaSummary)
@@ -51,14 +45,26 @@ export struct HomeMediaCard {
       .fontColor('#64748B')
     Row({ space: 8 }) {
       Button('选择音乐').onClick(async () => {
-        await this.mediaManager?.setAndPrepare(0)
-        await this.mediaManager?.play()
+        try {
+          await this.mediaManager?.setAndPrepare(0)
+          await this.mediaManager?.play()
+        } catch (e) {
+          IBestToast.show('音频加载失败')
+        }
       }).backgroundColor('#111827')
-      Button('暂停').onClick(() => {
-        this.mediaManager?.pause()
+      Button('暂停').onClick(async () => {
+        try {
+          await this.mediaManager?.pause()
+        } catch (e) {
+          IBestToast.show('暂停失败')
+        }
       }).backgroundColor('#F59E0B')
-      Button('播放').onClick(() => {
-        this.mediaManager?.play()
+      Button('播放').onClick(async () => {
+        try {
+          await this.mediaManager?.play()
+        } catch (e) {
+          IBestToast.show('播放失败')
+        }
       }).backgroundColor('#2563EB')
     }
   }

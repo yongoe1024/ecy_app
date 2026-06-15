@@ -29,15 +29,25 @@ ecy_app
 1. 使用 DevEco Studio 打开项目。
 2. 选择 `entry` 模块运行到模拟器或真机。
 
-> 默认环境地址配置在 `common/src/main/ets/functions/environment/EnvironmentManger.ets`。
+> 默认环境地址配置在 `common/src/main/ets/functions/environment/EnvironmentManager.ets`。
 
-## 页面说明
+## 启动流程
 
-| 页面 | 路径 | 说明 |
+1. `EntryStage` 创建全局状态 `GlobalState`（`AppStorageV2`）。
+2. `EntryAbility.onWindowStageCreate` 依据首选项 `agreePrivacy` 选择首屏：未同意 → `PrivacyPage`，已同意 → `Index`。
+3. 通过 `want.parameters.toUrl` 携带的深链会在隐私同意后、进入 `Index` 时消费跳转（热启动经 `onNewWant` 处理）。
+
+## 页面与路由
+
+| 页面 | 路径 / 路由 | 说明 |
 |------|------|------|
 | PrivacyPage | `pages/PrivacyPage` | 隐私同意页，首次启动显示 |
-| Index | `pages/Index` | 导航容器入口（NavPathStack） |
-| Main | `pages/Main` | 底部 Tab 主页面 |
+| Index | `pages/Index` | 导航容器入口（`Navigation` + `NavPathStack`） |
+| Main | `RouteTable.ENTRY_MAIN` (`ecy://entry/main`) | 底部 Tab 主页面（首页 / 购物 / 我的） |
+| WebViewPage | `RouteTable.COMMON_WEB` (`ecy://common/web`) | 通用 WebView，`RouteManager` 打开 http 链接时自动进入 |
+| LoginPage | `RouteTable.MINE_LOGIN` (`ecy://mine/login`) | 登录演示页，`push({ needLogin: true })` 未登录时自动跳转 |
+
+> 首页（`features/home` 的 Common Lab）以卡片形式演示了下列全部能力，可作为各 Manager 用法的活文档。
 
 ---
 
@@ -46,11 +56,11 @@ ecy_app
 ### 1. 环境切换
 
 ```ts
-import { EnvironmentManger, EnvEnum } from 'common'
+import { EnvironmentManager, EnvEnum } from 'common'
 
-const env = EnvironmentManger.getInstance().getEnv()       // 获取当前环境
-const baseUrl = EnvironmentManger.getInstance().getBaseUrl() // 获取 baseURL
-EnvironmentManger.getInstance().setEnv(EnvEnum.DEV)        // 切换环境（会重启应用）
+const env = EnvironmentManager.getInstance().getEnv()       // 获取当前环境
+const baseUrl = EnvironmentManager.getInstance().getBaseUrl() // 获取 baseURL
+EnvironmentManager.getInstance().setEnv(EnvEnum.DEV)        // 切换环境（会重启应用）
 ```
 
 ### 2. 本地存储
@@ -78,7 +88,8 @@ const token = UserManager.getInstance().getToken()
 import { RouteManager, RouteTable } from 'common'
 
 RouteManager.getInstance().push({ url: RouteTable.ENTRY_MAIN })
-RouteManager.getInstance().push({ url: 'https://developer.harmonyos.com/' }) // 自动打开 WebView
+RouteManager.getInstance().push({ url: 'https://developer.harmonyos.com/' }) // http 链接自动打开 WebView
+RouteManager.getInstance().push({ url: 'ecy://some/page', needLogin: true })  // 未登录时自动跳转登录页
 RouteManager.getInstance().pop()
 ```
 
@@ -169,15 +180,30 @@ struct MyComponent {
 ### 11. 媒体播放
 
 ```ts
-import { MediaManager } from 'common'
+import { MediaManager, PlayMode } from 'common'
 
 const mediaManager = await MediaManager.create(getContext(this), {
   mediaList: ['https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'],
-  playMode: 'SINGLE'
+  playMode: PlayMode.SINGLE,
+  onChange: (state) => { /* index / time / duration / isPlay 回调 */ }
 })
 
-await mediaManager.setAndPlay(0)
+await mediaManager.setAndPrepare(0) // 加载并准备指定索引（失败会 reject）
+await mediaManager.play()
 await mediaManager.pause()
+mediaManager.clear()                // 组件销毁时释放
+```
+
+### 12. WebView 组件
+
+```ts
+import { WebComponent } from 'common'
+
+// JS / DOM 存储默认开启，定位默认关闭，按需放开
+WebComponent({
+  src: 'https://developer.harmonyos.com/',
+  geolocationAccess: true
+})
 ```
 
 ---

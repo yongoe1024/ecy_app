@@ -24,21 +24,14 @@ export struct HomeTimerCard {
       maxTimeMs: TIMER_DURATION_MS,
       triggerTime: 1000,
       onTick: (value: number) => {
-        this.timerLabel = this.formatMs(value)
+        this.timerLabel = TimeHelper.formatClock(value)
       },
       onReachLimit: () => {
         this.timerRunning = false
         IBestToast.show('倒计时结束')
       }
     })
-    this.timerLabel = this.formatMs(TIMER_DURATION_MS)
-  }
-
-  formatMs(value: number): string {
-    const safeValue = value > 0 ? Math.floor(value / 1000) : 0
-    const minute = Math.floor(safeValue / 60).toString().padStart(2, '0')
-    const second = (safeValue % 60).toString().padStart(2, '0')
-    return `${minute}:${second}`
+    this.timerLabel = TimeHelper.formatClock(TIMER_DURATION_MS)
   }
 
   startTimer(): void {
@@ -59,7 +52,7 @@ export struct HomeTimerCard {
   resetTimer(): void {
     this.timer?.stop()
     this.timer?.setTimeMs(TIMER_DURATION_MS)
-    this.timerLabel = this.formatMs(TIMER_DURATION_MS)
+    this.timerLabel = TimeHelper.formatClock(TIMER_DURATION_MS)
     this.timerRunning = false
   }
 

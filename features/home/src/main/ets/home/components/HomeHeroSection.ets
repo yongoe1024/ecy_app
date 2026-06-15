@@ -1,4 +1,4 @@
-import { EnvironmentManger, GlobalState } from 'common'
+import { EnvironmentManager, GlobalState } from 'common'
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI'
 
 @ComponentV2
@@ -38,7 +38,7 @@ export struct HomeHeroSection {
             cross: LengthMetrics.vp(5),
           }
         }) {
-          this.lab(`环境：${EnvironmentManger.getInstance().getEnv()}`)
+          this.lab(`环境：${EnvironmentManager.getInstance().getEnv()}`)
           this.lab(`宽度 ${Math.floor(this.globalState.windowWidth)}vp`)
           this.lab(`高度 ${Math.floor(this.globalState.windowHeight)}vp`)
           this.lab(`导航栏${Math.floor(this.globalState.topRectHeight)}vp`)

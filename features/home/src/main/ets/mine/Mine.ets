@@ -1,5 +1,5 @@
 import { AppStorageV2 } from '@kit.ArkUI'
-import { GlobalState } from 'common'
+import { GlobalState, RouteManager, RouteTable } from 'common'
 
 @ComponentV2
 export struct Mine {
@@ -7,8 +7,12 @@ export struct Mine {
   @Local userName: string = '访客用户'
   @Local loginTip: string = '登录后可同步订单、地址与会员权益'
 
+  goLogin(): void {
+    RouteManager.getInstance().push({ url: RouteTable.MINE_LOGIN })
+  }
+
   @Builder
-  actionButton(text: string) {
+  actionButton(text: string, onClick: () => void) {
     Button(text)
       .width('100%')
       .height(44)
@@ -17,6 +21,7 @@ export struct Mine {
       .fontColor('#FFFFFF')
       .fontSize(15)
       .fontWeight(FontWeight.Medium)
+      .onClick(onClick)
   }
 
   @Builder
@@ -125,7 +130,9 @@ export struct Mine {
               .width('100%')
 
               Row({ space: 10 }) {
-                this.actionButton('请登录')
+                this.actionButton('请登录', () => {
+                  this.goLogin()
+                })
               }
               .width('100%')
             }

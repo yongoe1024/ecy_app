@@ -15,20 +15,14 @@
         "name": "ohos.permission.LOCATION",
         "reason": "$string:entry_location_reason",
         "usedScene": {
-          "abilities": [
-            "EntryAbility"
-          ],
-          "when": "always"
+          "when": "inuse"
         }
       },
       {
         "name": "ohos.permission.APPROXIMATELY_LOCATION",
         "reason": "$string:entry_location_reason",
         "usedScene": {
-          "abilities": [
-            "EntryAbility"
-          ],
-          "when": "always"
+          "when": "inuse"
         }
       }
     ]

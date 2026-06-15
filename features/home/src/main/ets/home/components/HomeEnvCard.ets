@@ -1,4 +1,4 @@
-import { EnvEnum, EnvironmentManger, GlobalState } from 'common'
+import { EnvEnum, EnvironmentManager, GlobalState } from 'common'
 import { AppStorageV2 } from '@kit.ArkUI'
 import { SectionCard } from '../SectionCard'
 
@@ -7,12 +7,12 @@ export struct HomeEnvCard {
   @Local globalState: GlobalState = AppStorageV2.connect(GlobalState)!
 
   switchEnv(env: EnvEnum): void {
-    EnvironmentManger.getInstance().setEnv(env)
+    EnvironmentManager.getInstance().setEnv(env)
   }
 
   @LocalBuilder
   cardContent() {
-    Text(`Base URL: ${EnvironmentManger.getInstance().getBaseUrl()}`)
+    Text(`Base URL: ${EnvironmentManager.getInstance().getBaseUrl()}`)
       .fontSize(13)
       .fontColor('#334155')
     Row({ space: 8 }) {
@@ -34,9 +34,8 @@ export struct HomeEnvCard {
   build() {
     SectionCard({
       title: '环境切换',
-      content: () => {
-        this.cardContent()
-      }
+      desc: '覆盖 EnvironmentManager 的环境读取与切换（切换后会重启应用）。',
+      content: this.cardContent
     })
   }
 }

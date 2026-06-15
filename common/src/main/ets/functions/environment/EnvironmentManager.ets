@@ -5,29 +5,29 @@ import { Want } from "@kit.AbilityKit";
 import { hilog } from "@kit.PerformanceAnalysisKit";
 
 const DOMAIN: number = 0x0000;
-const TAG: string = 'EnvironmentManger';
+const TAG: string = 'EnvironmentManager';
 
 // deveco虚拟机网关
 const DEV_BASE_URL = 'http://10.0.2.2:8080'
-const PRD_BASE_URL = 'http://myprod.com'
-const TEST_BASE_URL = 'http://mytest.com'
+const PRD_BASE_URL = 'https://myprod.com'
+const TEST_BASE_URL = 'https://mytest.com'
 
 /**
  * app环境管理器
  */
-export class EnvironmentManger {
-  private static instance: EnvironmentManger
+export class EnvironmentManager {
+  private static instance: EnvironmentManager
   private env?: EnvEnum
   globalState: GlobalState = AppStorageV2.connect(GlobalState)!
 
   private constructor() {
   }
 
-  public static getInstance(): EnvironmentManger {
-    if (!EnvironmentManger.instance) {
-      EnvironmentManger.instance = new EnvironmentManger()
+  public static getInstance(): EnvironmentManager {
+    if (!EnvironmentManager.instance) {
+      EnvironmentManager.instance = new EnvironmentManager()
     }
-    return EnvironmentManger.instance
+    return EnvironmentManager.instance
   }
 
   getEnv(): EnvEnum {

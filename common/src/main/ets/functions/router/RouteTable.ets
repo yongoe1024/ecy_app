@@ -6,9 +6,10 @@ export class RouteTable {
   /** common  **/
   // web
   public static readonly COMMON_WEB: string = "ecy://common/web";
-  /** entry  **/
+  /** mine  **/
   // 登录
-  public static readonly ENTRY_LOGIN: string = "ecy://mine/login";
+  public static readonly MINE_LOGIN: string = "ecy://mine/login";
+  /** entry  **/
   // 主页
   public static readonly ENTRY_MAIN: string = "ecy://entry/main";
 }

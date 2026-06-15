@@ -5,13 +5,10 @@ import { SectionCard } from '../SectionCard'
 export struct HomeNetworkCard {
   @Local networkSummary: string = '等待请求'
 
-  aboutToAppear(): void {
-    this.networkSummary = '等待请求'
-  }
-
   async requestNetDemo(): Promise<void> {
     this.networkSummary = '请求中...'
     try {
+      // 注：此处直接命中公网回显接口，返回结构并不遵循 ResponseModel 的 {code,message,data} 信封
       const res = await NetManager.getInstance().request({
         method: 'get',
         url: 'https://httpbin.org/get?source=common-lab'
