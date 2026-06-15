@@ -12,6 +12,7 @@ import { UserManager } from "../user/UserManager";
 import { DownloadParams, ResponseModel, UploadParams } from "./NetModel";
 import { fileIo } from "@kit.CoreFileKit";
 import { util } from "@kit.ArkTS";
+import { EnvEnum } from "../environment/GlobalModel";
 import { EnvironmentManger } from "../environment/EnvironmentManger";
 import { hilog } from "@kit.PerformanceAnalysisKit";
 
@@ -24,13 +25,12 @@ const TAG: string = 'NetManager';
 export class NetManager {
   private static instance: NetManager
   private axiosInstance: AxiosInstance
-  private readonly isDebug: boolean = EnvironmentManger.getInstance().getEnv() === 'DEV'
+  private readonly isDebug: boolean = EnvironmentManger.getInstance().getEnv() === EnvEnum.DEV
 
   private constructor() {
     this.axiosInstance = axios.create({
       baseURL: EnvironmentManger.getInstance().getBaseUrl(),
       timeout: 5000,
-      // headers: {'X-Custom-Header': 'foobar'}
     })
     // 添加请求拦截器
     this.axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -158,11 +158,15 @@ export class NetManager {
    */
   private async copyToCache(context: Context, path: string): Promise<string> {
     let dir = context.cacheDir
-    let type = path.split('.').pop()
-    let uuid = util.generateRandomUUID() + '.' + type
+    let dotIndex = path.lastIndexOf('.')
+    let ext = dotIndex >= 0 ? path.substring(dotIndex) : ''
+    let uuid = util.generateRandomUUID() + ext
     let pathIO = fileIo.openSync(path, fileIo.OpenMode.READ_ONLY)
-    fileIo.copyFileSync(pathIO.fd, `${dir}/${uuid}`)
-    fileIo.closeSync(pathIO);
+    try {
+      fileIo.copyFileSync(pathIO.fd, `${dir}/${uuid}`)
+    } finally {
+      fileIo.closeSync(pathIO)
+    }
     return `internal://cache/${uuid}`
   }
 }

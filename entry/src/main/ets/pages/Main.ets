@@ -44,6 +44,7 @@ struct Main {
       }
       .layoutWeight(1)
       .barHeight(0)
+      .edgeEffect(EdgeEffect.Fade)
 
       Row({ space: 30 }) {
         this.tabBar('首页', $r("app.media.entry_ic_main_home"), $r("app.media.entry_ic_main_home_active"), 0)

@@ -2,6 +2,8 @@ import { IBestToast } from '@ibestservices/ibest-ui-v2'
 import { TimeHelper, TimerType } from 'common'
 import { SectionCard } from '../SectionCard'
 
+const TIMER_DURATION_MS = 90 * 1000
+
 @ComponentV2
 export struct HomeTimerCard {
   @Local timerLabel: string = '01:30'
@@ -19,7 +21,7 @@ export struct HomeTimerCard {
   prepareTimer(): void {
     this.timer = TimeHelper.build({
       type: TimerType.COUNT_DOWN,
-      maxTimeMs: 90 * 1000,
+      maxTimeMs: TIMER_DURATION_MS,
       triggerTime: 1000,
       onTick: (value: number) => {
         this.timerLabel = this.formatMs(value)
@@ -29,8 +31,7 @@ export struct HomeTimerCard {
         IBestToast.show('倒计时结束')
       }
     })
-    this.timer.setTimeMs(90 * 1000)
-    this.timerLabel = this.formatMs(90 * 1000)
+    this.timerLabel = this.formatMs(TIMER_DURATION_MS)
   }
 
   formatMs(value: number): string {
@@ -57,8 +58,8 @@ export struct HomeTimerCard {
 
   resetTimer(): void {
     this.timer?.stop()
-    this.timer?.setTimeMs(90 * 1000)
-    this.timerLabel = this.formatMs(90 * 1000)
+    this.timer?.setTimeMs(TIMER_DURATION_MS)
+    this.timerLabel = this.formatMs(TIMER_DURATION_MS)
     this.timerRunning = false
   }
 

@@ -1,4 +1,4 @@
-import { MediaManager, MediaState } from 'common'
+import { MediaManager, MediaState, PlayMode } from 'common'
 import { SectionCard } from '../SectionCard'
 
 const DEMO_AUDIO: string = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
@@ -9,22 +9,11 @@ export struct HomeMediaCard {
   @Local mediaReady: boolean = false
   mediaManager?: MediaManager
 
-  aboutToAppear(): void {
-    void this.prepareMedia()
-  }
-
-  aboutToDisappear(): void {
-    if (this.mediaManager) {
-      void this.mediaManager.release()
-      this.mediaManager = undefined
-    }
-  }
-
-  async prepareMedia(): Promise<void> {
+  async aboutToAppear(): Promise<void> {
     try {
       this.mediaManager = await MediaManager.create(getContext(this), {
         mediaList: [DEMO_AUDIO],
-        playMode: 'SINGLE',
+        playMode: PlayMode.SINGLE,
         onChange: (state: MediaState) => {
           this.mediaReady = true
           this.mediaSummary =
@@ -40,26 +29,15 @@ export struct HomeMediaCard {
     }
   }
 
+  aboutToDisappear(): void {
+    void this.mediaManager?.clear()
+  }
+
   formatMs(value: number): string {
     const safeValue = value > 0 ? Math.floor(value / 1000) : 0
     const minute = Math.floor(safeValue / 60).toString().padStart(2, '0')
     const second = (safeValue % 60).toString().padStart(2, '0')
     return `${minute}:${second}`
-  }
-
-  async playMedia(): Promise<void> {
-    if (!this.mediaManager) {
-      await this.prepareMedia()
-    }
-    await this.mediaManager?.setAndPlay(0)
-  }
-
-  async pauseMedia(): Promise<void> {
-    await this.mediaManager?.pause()
-  }
-
-  async resumeMedia(): Promise<void> {
-    await this.mediaManager?.play()
   }
 
   @LocalBuilder
@@ -72,14 +50,15 @@ export struct HomeMediaCard {
       .fontSize(12)
       .fontColor('#64748B')
     Row({ space: 8 }) {
-      Button('播放').onClick(() => {
-        void this.playMedia()
+      Button('选择音乐').onClick(async () => {
+        await this.mediaManager?.setAndPrepare(0)
+        await this.mediaManager?.play()
       }).backgroundColor('#111827')
       Button('暂停').onClick(() => {
-        void this.pauseMedia()
+        this.mediaManager?.pause()
       }).backgroundColor('#F59E0B')
-      Button('继续').onClick(() => {
-        void this.resumeMedia()
+      Button('播放').onClick(() => {
+        this.mediaManager?.play()
       }).backgroundColor('#2563EB')
     }
   }

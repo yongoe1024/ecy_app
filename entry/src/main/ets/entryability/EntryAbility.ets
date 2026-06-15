@@ -2,7 +2,8 @@ import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.Ab
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AppStorageV2, window } from '@kit.ArkUI';
 import { IBestInit } from '@ibestservices/ibest-ui-v2/Index';
-import { GlobalState, PreferenceManager, RouteManager, } from 'common';
+import { EnvEnum, EnvironmentManger, GlobalState, PreferenceManager, RouteManager, } from 'common';
+import { webview } from '@kit.ArkWeb';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility'
@@ -22,6 +23,9 @@ export default class EntryAbility extends UIAbility {
       hilog.error(DOMAIN, TAG, 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
     }
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onCreate');
+    if (EnvironmentManger.getInstance().getEnv() === EnvEnum.DEV) {
+      webview.WebviewController.setWebDebuggingAccess(true);
+    }
   }
 
   onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
@@ -67,7 +71,7 @@ export default class EntryAbility extends UIAbility {
 
   onWindowStageDestroy(): void {
     this.globalState.windowStage = undefined;
-    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageDestroy');
+    hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onWindowStageDestroy');
   }
 
   onForeground(): void {
@@ -105,7 +109,7 @@ export default class EntryAbility extends UIAbility {
         if (data.type === window.AvoidAreaType.TYPE_SYSTEM) {
           const topRectHeight = data.area.topRect.height;
           this.globalState.topRectHeight = uiContext.px2vp(topRectHeight)
-        } else if (data.type == window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR) {
+        } else if (data.type === window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR) {
           const bottomRectHeight = data.area.bottomRect.height;
           this.globalState.bottomRectHeight = uiContext.px2vp(bottomRectHeight)
         }
@@ -119,7 +123,7 @@ export default class EntryAbility extends UIAbility {
       });
       // 监听键盘高度
       windowClass.on('keyboardHeightChange', (data: number) => {
-        this.globalState.keyboardHeight = px2vp(data)
+        this.globalState.keyboardHeight = uiContext.px2vp(data)
       })
     } catch (e) {
       hilog.error(DOMAIN, TAG, `updateWinInfo ：${e.code} ${e.message}`);

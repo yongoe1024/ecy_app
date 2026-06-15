@@ -7,31 +7,31 @@
  * 屏幕断点工具
  */
 export class Breakpoint {
-  static ofWidth<T>(point: WidthBreakpoint, xs?: T, sm?: T, md?: T, lg?: T, xl?: T): T | undefined {
+  static ofWidth(point: WidthBreakpoint, xs: Length, sm?: Length, md?: Length, lg?: Length, xl?: Length): Length {
     switch (point) {
       case 0:
         return xs;
       case 1:
-        return sm;
+        return sm ?? xs;
       case 2:
-        return md;
+        return md ?? xs;
       case 3:
-        return lg;
+        return lg ?? xs;
       case 4:
-        return xl;
+        return xl ?? xs;
       default:
         return xs
     }
   }
 
-  static ofHeight<T>(point: HeightBreakpoint, sm?: T, md?: T, lg?: T): T | undefined {
+  static ofHeight(point: HeightBreakpoint, sm: Length, md?: Length, lg?: Length): Length {
     switch (point) {
       case 0:
         return sm;
       case 1:
-        return md;
+        return md ?? sm;
       case 2:
-        return lg;
+        return lg ?? sm;
       default:
         return sm
     }

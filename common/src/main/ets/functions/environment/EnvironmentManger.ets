@@ -7,6 +7,11 @@ import { hilog } from "@kit.PerformanceAnalysisKit";
 const DOMAIN: number = 0x0000;
 const TAG: string = 'EnvironmentManger';
 
+// deveco虚拟机网关
+const DEV_BASE_URL = 'http://10.0.2.2:8080'
+const PRD_BASE_URL = 'http://myprod.com'
+const TEST_BASE_URL = 'http://mytest.com'
+
 /**
  * app环境管理器
  */
@@ -74,11 +79,11 @@ export class EnvironmentManger {
   getBaseUrl(): string {
     switch (this.getEnv()) {
       case EnvEnum.DEV:
-        return "http://10.0.2.2:8080"
+        return DEV_BASE_URL
       case EnvEnum.PRD:
-        return "http://myprod.com"
+        return PRD_BASE_URL
       case EnvEnum.TEST:
-        return "http://mytest.com"
+        return TEST_BASE_URL
       default:
         throw new Error("getBaseUrl:不存在的环境")
     }

@@ -1,3 +1,5 @@
+const DEFAULT_TRIGGER_TIME_MS = 1000
+
 export enum TimerType {
   COUNT_UP,
   COUNT_DOWN
@@ -13,7 +15,7 @@ export interface TimeBuildOptions {
 
 /** 统一的计时引擎，负责专注正计时、休息倒计时以及每秒回调分发。 */
 export class TimeHelper {
-  private triggerTime: number = 1000
+  private triggerTime: number = DEFAULT_TRIGGER_TIME_MS
   private timerId: number = -1;
   private type: TimerType = TimerType.COUNT_UP;
   private maxTimeMs: number = 0;
@@ -33,7 +35,7 @@ export class TimeHelper {
     time.maxTimeMs = option.maxTimeMs
     time.onTick = option.onTick
     time.onReachLimit = option.onReachLimit
-    time.triggerTime = option.triggerTime ?? 1000
+    time.triggerTime = option.triggerTime ?? DEFAULT_TRIGGER_TIME_MS
     return time
   }
 
@@ -52,22 +54,27 @@ export class TimeHelper {
   /** 从头启动一个计时阶段，并根据当前模式初始化秒数。 */
   start(): void {
     this.stop();
-    if (this.type === TimerType.COUNT_UP) {
-      this.timeMs = 0;
-    } else {
-      this.timeMs = this.maxTimeMs;
-    }
+    this.timeMs = this.type === TimerType.COUNT_UP ? 0 : this.maxTimeMs;
     this.tick();
+    this.startInterval();
+  }
+
+  /** 触发一次时间回调，把当前秒数同步给页面或业务层。 */
+  private tick(): void {
+    this.onTick?.(this.timeMs);
+  }
+
+  private startInterval(): void {
     this.timerId = setInterval(() => {
       if (this.type === TimerType.COUNT_UP) {
-        this.timeMs += this.triggerTime
+        this.timeMs += this.triggerTime;
         this.tick();
         if (this.maxTimeMs > 0 && this.timeMs >= this.maxTimeMs) {
           this.stop();
           this.onReachLimit?.();
         }
       } else {
-        this.timeMs -= this.triggerTime
+        this.timeMs -= this.triggerTime;
         this.tick();
         if (this.timeMs <= 0) {
           this.stop();
@@ -75,11 +82,6 @@ export class TimeHelper {
         }
       }
     }, this.triggerTime) as number;
-  }
-
-  /** 触发一次时间回调，把当前秒数同步给页面或业务层。 */
-  private tick(): void {
-    this.onTick?.(this.timeMs);
   }
 
   /** 停止当前计时任务，但保留当前秒数以便后续恢复。 */
@@ -94,22 +96,6 @@ export class TimeHelper {
   resume(): void {
     this.stop();
     this.tick();
-    this.timerId = setInterval(() => {
-      if (this.type === TimerType.COUNT_UP) {
-        this.timeMs += this.triggerTime
-        this.tick();
-        if (this.maxTimeMs > 0 && this.timeMs >= this.maxTimeMs) {
-          this.stop();
-          this.onReachLimit?.();
-        }
-      } else {
-        this.timeMs -= this.triggerTime
-        this.tick();
-        if (this.timeMs <= 0) {
-          this.stop();
-          this.onReachLimit?.();
-        }
-      }
-    }, this.triggerTime) as number;
+    this.startInterval();
   }
 }

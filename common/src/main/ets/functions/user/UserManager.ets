@@ -95,7 +95,7 @@ export class UserManager {
         code: code
       }
     })
-    if (res.code == 200) {
+    if (res.code === 200) {
       this.setToken(res.data as string)
       try {
         this.userModel = await this.getUserInfo(true)
@@ -110,7 +110,7 @@ export class UserManager {
         return Promise.reject(e)
       }
     } else {
-      return Promise.reject()
+      return Promise.reject(new Error(`login failed: code=${res.code}`))
     }
   }
 
@@ -131,11 +131,11 @@ export class UserManager {
       method: 'post',
       url: 'getUserInfo',
     })
-    if (res.code == 200) {
+    if (res.code === 200) {
       this.userModel = res.data
       return this.userModel
     } else {
-      return Promise.reject()
+      return Promise.reject(new Error(`getUserInfo failed: code=${res.code}`))
     }
   }
 
@@ -148,14 +148,14 @@ export class UserManager {
       method: 'post',
       url: 'logout',
     })
-    if (res.code == 200) {
+    if (res.code === 200) {
       this.userModel = undefined
       this.setToken('')
       this.listeners.forEach((item) => {
         item.onLogout?.()
       })
     } else {
-      return Promise.reject()
+      return Promise.reject(new Error(`logout failed: code=${res.code}`))
     }
   }
 }

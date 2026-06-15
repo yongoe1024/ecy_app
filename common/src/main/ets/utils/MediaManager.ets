@@ -9,10 +9,19 @@ const TAG: string = 'MediaManager';
 /**
  * 初始化配置,ONCE需要重新setup
  */
-export type PlayMode = 'SINGLE' | 'ORDER' | 'RANDOM' | 'ONCE'
+export enum PlayMode {
+  // 单个循环
+  SINGLE,
+  // 顺序播放
+  ORDER,
+  // 随机播放
+  RANDOM,
+  // 可以重新调用play播放
+  ONCE
+}
 
 export interface MediaConfig {
-  playMode?: PlayMode
+  playMode: PlayMode
   // 支持http链接、rawfile的文件名
   mediaList?: string[]
   onChange?: Callback<MediaState>
@@ -45,6 +54,8 @@ export class MediaManager {
   private avPlayer: media.AVPlayer
   private context: Context
   private state: MediaState
+  private resolve?: (value: void | PromiseLike<void>) => void;
+  private reject?: (reason?: BusinessError) => void;
 
   constructor(avPlayer: media.AVPlayer, context: Context, state: MediaState) {
     this.avPlayer = avPlayer;
@@ -63,7 +74,7 @@ export class MediaManager {
       time: 0,
       duration: 0,
       isPlay: false,
-      playMode: state.playMode ?? 'SINGLE',
+      playMode: state.playMode,
       mediaList: state.mediaList ?? [],
       surfaceID: state.surfaceID,
       audioRendererInfo: state.audioRendererInfo
@@ -89,39 +100,54 @@ export class MediaManager {
   }
 
   /**
-   * 初始化 并准备播放
+   * 设置并准备播放（加载资源，可得到时长）
    * @throws BusinessError
    */
-  async setAndPlay(index: number, config?: MediaConfig): Promise<void> {
-    await this.avPlayer.reset()
-    if (config) {
-      this.state.mediaList = config.mediaList ?? this.state.mediaList
-      this.state.playMode = config.playMode ?? this.state.playMode
-      this.state.audioRendererInfo = config.audioRendererInfo
-      this.state.surfaceID = config.surfaceID
-    }
-    this.state.index = index
-    if (index < 0 || index >= this.state.mediaList.length) {
-      this.state.index = -1
-      return
-    }
-
-    if (this.state.index >= 0 && this.state.mediaList.length > 0) {
-      await this.setUrl(this.state.mediaList[this.state.index])
-    }
+  async setAndPrepare(index: number, config?: MediaConfig): Promise<void> {
+    return new Promise<void>(async (resolve, reject) => {
+      this.resolve = resolve
+      this.reject = reject
+      try {
+        await this.avPlayer.reset()
+        if (config) {
+          this.state.mediaList = config.mediaList ?? this.state.mediaList
+          this.state.playMode = config.playMode ?? this.state.playMode
+          this.state.audioRendererInfo = config.audioRendererInfo
+          this.state.surfaceID = config.surfaceID
+        }
+        this.state.index = index
+        if (index < 0 || index >= this.state.mediaList.length) {
+          this.state.index = -1
+          resolve()
+          return
+        }
+        if (this.state.index >= 0 && this.state.mediaList.length > 0) {
+          await this.setUrl(this.state.mediaList[this.state.index])
+        }
+      } catch (e) {
+        reject(e)
+      }
+    })
   }
 
   /**
-   * 释放
+   * 重置
    * @throws BusinessError
    */
-  async release() {
-    // this.avPlayer.off('stateChange');
+  async reset() {
+    return this.avPlayer.reset()
+  }
+
+  /**
+   * 销毁
+   * @throws BusinessError
+   */
+  async clear() {
     this.avPlayer.release()
   }
 
   /**
-   * 恢复播放
+   * 播放
    * @throws BusinessError
    */
   async play(): Promise<void> {
@@ -173,19 +199,19 @@ export class MediaManager {
           if (this.state.audioRendererInfo) {
             this.avPlayer.audioRendererInfo = this.state.audioRendererInfo
           }
-          this.avPlayer.prepare().catch((e: BusinessError) => {
-            hilog.error(DOMAIN, TAG, `initialized - prepare ：${e.code} ${e.message}`);
-          }).finally(() => {
-            this.onChange?.(this.state)
-          })
+          this.avPlayer.prepare()
+            .then(() => {
+              this.resolve?.()
+            })
+            .catch((e: BusinessError) => {
+              hilog.error(DOMAIN, TAG, `initialized - prepare ：${e.code} ${e.message}`);
+            })
+            .finally(() => {
+              this.onChange?.(this.state)
+            })
           break;
         //准备完毕
         case 'prepared':
-          this.avPlayer.play().catch((e: BusinessError) => {
-            hilog.error(DOMAIN, TAG, `prepared - play ：${e.code} ${e.message}`);
-          }).finally(() => {
-            this.onChange?.(this.state)
-          })
           break;
         // play成功调用后触发该状态机上报
         case 'playing':
@@ -201,24 +227,26 @@ export class MediaManager {
         case 'completed':
           try {
             // 循环
-            if (this.state.playMode === 'SINGLE') {
-              await this.avPlayer.play()
-            } else if (this.state.playMode === 'ORDER') {
+            if (this.state.playMode === PlayMode.SINGLE) {
+              await this.play()
+            } else if (this.state.playMode === PlayMode.ORDER) {
               this.state.index++
               if (this.state.index >= this.state.mediaList.length) {
                 this.state.index = 0
               }
-              await this.setAndPlay(this.state.index)
-            } else if (this.state.playMode === 'RANDOM') {
+              await this.setAndPrepare(this.state.index)
+              await this.play()
+            } else if (this.state.playMode === PlayMode.RANDOM) {
               let index: number = 0
               //do_while循环，求出新的索引
               do {
                 index = Math.floor(Math.random() * this.state.mediaList.length)
               } while (this.state.mediaList.length > 1 && index === this.state.index)
               this.state.index = index
-              await this.setAndPlay(this.state.index)
-            } else if (this.state.playMode === 'ONCE') {
-              await this.avPlayer.stop()
+              await this.setAndPrepare(this.state.index)
+              await this.play()
+            } else if (this.state.playMode === PlayMode.ONCE) {
+              await this.avPlayer.reset()
             }
             this.onChange?.(this.state)
           } catch (e) {
@@ -227,11 +255,6 @@ export class MediaManager {
           break
         case 'stopped':
           // 停止状态，需要再次prepare
-          this.state.index = -1
-          this.state.duration = 0
-          this.state.time = 0
-          this.state.isPlay = false
-          this.onChange?.(this.state)
           break;
         case 'released':
           // 销毁状态，需要重新create

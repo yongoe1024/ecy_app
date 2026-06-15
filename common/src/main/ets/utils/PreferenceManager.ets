@@ -8,41 +8,32 @@ const PREFERENCES_NAME: string = 'ECY_APP';
  * 用户首选项
  **/
 export class PreferenceManager {
-  /**
-   * @throws
-   */
+  private static getPrefs(): preferences.Preferences {
+    const state = AppStorageV2.connect(GlobalState)!;
+    return preferences.getPreferencesSync(state.uiAbilityContext, { name: PREFERENCES_NAME });
+  }
+
+  /** @throws */
   static getSync(key: string, defaultValue?: preferences.ValueType): preferences.ValueType {
-    const state = AppStorageV2.connect(GlobalState)!;
-    const pre = preferences.getPreferencesSync(state.uiAbilityContext, { name: PREFERENCES_NAME })
-    return pre.getSync(key, defaultValue)
+    return PreferenceManager.getPrefs().getSync(key, defaultValue);
   }
 
-  /**
-   * @throws
-   */
+  /** @throws */
   static putSync(key: string, value: preferences.ValueType): void {
-    const state = AppStorageV2.connect(GlobalState)!;
-    const pre = preferences.getPreferencesSync(state.uiAbilityContext, { name: PREFERENCES_NAME })
-    pre.putSync(key, value)
-    pre.flushSync()
+    const pre = PreferenceManager.getPrefs();
+    pre.putSync(key, value);
+    pre.flushSync();
   }
 
-  /**
-   * @throws
-   */
+  /** @throws */
   static hasSync(key: string): boolean {
-    const state = AppStorageV2.connect(GlobalState)!;
-    const pre = preferences.getPreferencesSync(state.uiAbilityContext, { name: PREFERENCES_NAME })
-    return pre.hasSync(key)
+    return PreferenceManager.getPrefs().hasSync(key);
   }
 
-  /**
-   * @throws
-   */
+  /** @throws */
   static deleteSync(key: string): void {
-    const state = AppStorageV2.connect(GlobalState)!;
-    const pre = preferences.getPreferencesSync(state.uiAbilityContext, { name: PREFERENCES_NAME })
-    pre.deleteSync(key)
-    pre.flushSync()
+    const pre = PreferenceManager.getPrefs();
+    pre.deleteSync(key);
+    pre.flushSync();
   }
 }
