@@ -13,7 +13,7 @@ const PRIVACY_POLICY_URL: string = ''
 @Entry
 @ComponentV2
 struct PrivacyPage {
-  @Local state: GlobalState = AppStorageV2.connect(GlobalState)!
+  @Local globalState: GlobalState = AppStorageV2.connect(GlobalState)!
 
   build() {
     Stack({ alignContent: Alignment.Top }) {
@@ -30,14 +30,14 @@ struct PrivacyPage {
         .height(180)
         .borderRadius(90)
         .backgroundColor('#33FFFFFF')
-        .position({ top: 72 + this.state.topRectHeight, right: -48 })
+        .position({ top: 72 + this.globalState.topRectHeight, right: -48 })
 
       Column()
         .width(120)
         .height(120)
         .borderRadius(60)
         .backgroundColor('#22FFFFFF')
-        .position({ top: 196 + this.state.topRectHeight, left: -32 })
+        .position({ top: 196 + this.globalState.topRectHeight, left: -32 })
 
       Scroll() {
         Column({ space: 20 }) {
@@ -194,6 +194,7 @@ struct PrivacyPage {
                   router.replace({ url: 'pages/Index' })
                 } catch (e) {
                   hilog.error(DOMAIN, TAG, `onBtnClick ：${e.code} ${e.message}`);
+                  IBestToast.show('保存失败，请重试')
                 }
               }
             })
@@ -214,7 +215,7 @@ struct PrivacyPage {
         .padding({
           left: 20,
           right: 20,
-          top: 24 + this.state.topRectHeight,
+          top: 24 + this.globalState.topRectHeight,
           bottom: 12
         })
         .width('100%')

@@ -74,10 +74,11 @@ export class UserManager {
   setToken(str: string): void {
     try {
       PreferenceManager.putSync('token', str)
+      // 持久化成功后再更新内存，避免落盘失败导致内存与磁盘不一致
+      this.token = str
     } catch (e) {
       hilog.error(DOMAIN, TAG, `setToken ：${e.code} ${e.message}`);
     }
-    this.token = str
   }
 
   /**
@@ -102,7 +103,11 @@ export class UserManager {
         this.userModel = await this.getUserInfo(true)
         if (this.userModel) {
           this.listeners.forEach((item) => {
-            item.onLogin?.()
+            try {
+              item.onLogin?.()
+            } catch (e) {
+              hilog.error(DOMAIN, TAG, `onLogin listener ：${e?.message}`);
+            }
           })
         }
       } catch (e) {
@@ -154,7 +159,11 @@ export class UserManager {
       this.userModel = undefined
       this.setToken('')
       this.listeners.forEach((item) => {
-        item.onLogout?.()
+        try {
+          item.onLogout?.()
+        } catch (e) {
+          hilog.error(DOMAIN, TAG, `onLogout listener ：${e?.message}`);
+        }
       })
     } else {
       return Promise.reject(new Error(`logout failed: code=${res.code}`))

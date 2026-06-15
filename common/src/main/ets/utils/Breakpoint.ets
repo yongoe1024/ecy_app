@@ -2,7 +2,7 @@
 // @Env(SystemProperties.BREAK_POINT) breakpoint: uiObserver.WindowSizeLayoutBreakpointInfo; // 正确用法
 
 // Text('Test')
-//  .fontSize(  BreakpointType.of(this.currentWidthBreakpoint,'14fp', '16fp', '18fp') )
+//  .fontSize( Breakpoint.ofWidth(this.globalState.widthBreakpoint, '14fp', '16fp', '18fp') )
 /**
  * 屏幕断点工具
  */

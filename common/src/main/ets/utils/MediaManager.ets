@@ -67,19 +67,19 @@ export class MediaManager {
    * 创建实例
    * @throws BusinessError
    */
-  static async create(context: Context, state: MediaConfig): Promise<MediaManager> {
+  static async create(context: Context, config: MediaConfig): Promise<MediaManager> {
     const avPlayer = await media.createAVPlayer()
     const ins: MediaManager = new MediaManager(avPlayer, context, {
       index: -1,
       time: 0,
       duration: 0,
       isPlay: false,
-      playMode: state.playMode,
-      mediaList: state.mediaList ?? [],
-      surfaceID: state.surfaceID,
-      audioRendererInfo: state.audioRendererInfo
+      playMode: config.playMode,
+      mediaList: config.mediaList ?? [],
+      surfaceID: config.surfaceID,
+      audioRendererInfo: config.audioRendererInfo
     })
-    ins.onChange = state.onChange
+    ins.onChange = config.onChange
     ins.initCallback()
     return ins
   }
@@ -329,6 +329,11 @@ export class MediaManager {
     });
     // 监听音频焦点切换信息，搭配属性audioInterruptMode使用
     this.avPlayer.on('audioInterrupt', (info: audio.InterruptEvent) => {
+      // 音频焦点被抢占（来电、其它媒体播放等）：标记为暂停并通知 UI，避免状态与实际不一致
+      if (info.eventType === audio.InterruptType.INTERRUPT_TYPE_BEGIN) {
+        this.state.isPlay = false
+        this.onChange?.(this.state)
+      }
     });
     this.avPlayer.on('videoSizeChange', (width: number, height: number) => {
       this.state.width = width

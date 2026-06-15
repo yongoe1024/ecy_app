@@ -10,7 +10,7 @@ export function MainBuilder() {
 @ComponentV2
 struct Main {
   @Local selectIndex: number = 0
-  @Local state: GlobalState = AppStorageV2.connect(GlobalState)!
+  @Local globalState: GlobalState = AppStorageV2.connect(GlobalState)!
 
   @Builder
   tabBar(title: string, icon: Resource, active: Resource, index: number) {
@@ -19,7 +19,7 @@ struct Main {
         .width(18)
       Text(title)
         .fontSize(14)
-        .fontColor(index === this.selectIndex ? '#e89297' : '#999')
+        .fontColor(index === this.selectIndex ? '#1D4ED8' : '#999')
     }
     .onClick(() => {
       this.selectIndex = index
@@ -61,7 +61,7 @@ struct Main {
         this.tabBar('购物', $r("app.media.entry_ic_main_shop"), $r("app.media.entry_ic_main_shop_active"), 1)
         this.tabBar('我的', $r("app.media.entry_ic_main_mine"), $r("app.media.entry_ic_main_mine_active"), 2)
       }
-      .padding({ top: 10, bottom: this.state.bottomRectHeight })
+      .padding({ top: 10, bottom: this.globalState.bottomRectHeight })
       .borderColor('#eee')
       .borderWidth({ top: 1 })
       .justifyContent(FlexAlign.SpaceAround)

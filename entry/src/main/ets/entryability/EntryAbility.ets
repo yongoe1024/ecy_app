@@ -134,6 +134,9 @@ export default class EntryAbility extends UIAbility {
       const props = windowClass.getWindowProperties()
       this.globalState.windowWidth = uiContext.px2vp(props.windowRect.width)
       this.globalState.windowHeight = uiContext.px2vp(props.windowRect.height)
+      // 初始化断点：windowSizeChange 仅在尺寸变化时回调，首屏需先取一次，否则响应式布局会按默认 XS 渲染
+      this.globalState.widthBreakpoint = uiContext.getWindowWidthBreakpoint();
+      this.globalState.heightBreakpoint = uiContext.getWindowHeightBreakpoint();
       // 注册监听避让区
       windowClass.on('avoidAreaChange', (data) => {
         if (data.type === window.AvoidAreaType.TYPE_SYSTEM) {

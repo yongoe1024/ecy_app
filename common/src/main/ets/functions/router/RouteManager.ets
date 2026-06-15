@@ -67,7 +67,27 @@ export class RouteManager {
       hilog.warn(DOMAIN, TAG, `拒绝非法深链：${url}`);
       return
     }
+    // 深链可能通过 ?src= 携带外链（如 ecy://common/web?src=...），经内部 WebView 路由打开任意网页。
+    // 默认不允许深链打开外链，避免开放重定向 / 钓鱼；如需放开，在 isDeepLinkSrcSafe 内加 host 白名单。
+    if (!RouteManager.isDeepLinkSrcSafe(url)) {
+      hilog.warn(DOMAIN, TAG, `拒绝深链携带的外链 src：${url}`);
+      return
+    }
     this.push({ url })
+  }
+
+  /** 深链不得携带 http(s) 外链 src，防止经内部 WebView 路由打开任意网页 */
+  private static isDeepLinkSrcSafe(url: string): boolean {
+    try {
+      const u = new uri.URI(url)
+      if (!u.getQueryNames().includes('src')) {
+        return true
+      }
+      const src = u.getQueryValue('src')
+      return !src || !src.startsWith('http')
+    } catch (e) {
+      return false
+    }
   }
 
   /**
