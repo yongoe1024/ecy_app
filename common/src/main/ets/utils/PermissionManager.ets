@@ -2,16 +2,24 @@ import { abilityAccessCtrl, bundleManager, Permissions } from '@kit.AbilityKit'
 import { AppStorageV2 } from '@kit.ArkUI'
 import { GlobalState } from '../functions'
 import { hilog } from '@kit.PerformanceAnalysisKit'
+import { BusinessError } from '@kit.BasicServicesKit'
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'PermissionManager';
+
+/** 动态申请权限的结果 */
+interface PermissionRequestResult {
+  granted: boolean
+  // 是否存在「不再询问」的永久拒绝项（系统未弹框），用于决定是否引导去设置页
+  permanentlyDenied: boolean
+}
 
 /**
  * 权限管理类
  */
 export class PermissionManager {
   /**
-   * 获取权限，失败弹窗跳转设置页
+   * 获取权限，永久拒绝时弹窗引导跳转设置页
    * @param permissions 权限
    * @param failStr 跳转提示信息
    * @returns 成功失败
@@ -22,11 +30,14 @@ export class PermissionManager {
     if (not.length == 0) {
       return true
     }
-    let res = await PermissionManager.request(not)
-    if (res) {
+    const res = await PermissionManager.request(not)
+    if (res.granted) {
       return true
     }
-    PermissionManager.showDialog(failStr)
+    // 仅在「不再询问」的永久拒绝时引导去设置页；首次拒绝保留下次系统弹窗的机会
+    if (res.permanentlyDenied) {
+      PermissionManager.showDialog(failStr)
+    }
     return false
   }
 
@@ -50,6 +61,8 @@ export class PermissionManager {
           noPermissionList.push(per)
         }
       } catch (error) {
+        // 校验异常时按未授予处理，并记录便于排查
+        hilog.warn(DOMAIN, TAG, `check ${per} ：${error?.code} ${error?.message}`);
         noPermissionList.push(per)
       }
     })
@@ -58,14 +71,33 @@ export class PermissionManager {
   }
 
   /**
-   * 动态申请权限
+   * 动态申请权限，并区分首次拒绝与「不再询问」的永久拒绝
    * @throws
    */
-  private static async request(permissions: Permissions[]): Promise<boolean> {
+  private static async request(permissions: Permissions[]): Promise<PermissionRequestResult> {
+    const state = AppStorageV2.connect(GlobalState)!
+    const context = state.uiAbilityContext
+    // 显式使用 UIAbilityContext，避免 getContext() 隐式取到非预期上下文
+    if (!context) {
+      hilog.error(DOMAIN, TAG, 'request 失败：uiAbilityContext 未初始化');
+      return { granted: false, permanentlyDenied: false }
+    }
     const manager = abilityAccessCtrl.createAtManager()
-    const result = await manager.requestPermissionsFromUser(getContext(), permissions)
-    const success = result.authResults.every(item => item === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED)
-    return success
+    const result = await manager.requestPermissionsFromUser(context, permissions)
+    const authResults = result.authResults
+    const dialogShownResults = result.dialogShownResults
+    const granted = authResults.every(item => item === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED)
+    // 被拒绝且系统未弹框（dialogShownResults 为 false）→「不再询问」的永久拒绝
+    let permanentlyDenied = false
+    for (let i = 0; i < authResults.length; i++) {
+      const denied = authResults[i] !== abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED
+      const dialogShown = dialogShownResults ? dialogShownResults[i] : false
+      if (denied && !dialogShown) {
+        permanentlyDenied = true
+        break
+      }
+    }
+    return { granted, permanentlyDenied }
   }
 
   /**
@@ -107,6 +139,8 @@ export class PermissionManager {
         parameters: {
           pushParams: appInfo.name
         }
+      }).catch((e: BusinessError) => {
+        hilog.error(DOMAIN, TAG, `startAbility settings ：${e.code} ${e.message}`);
       })
     }
   }

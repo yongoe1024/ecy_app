@@ -41,8 +41,8 @@ export struct HomeHeroSection {
           this.lab(`环境：${EnvironmentManager.getInstance().getEnv()}`)
           this.lab(`宽度 ${Math.floor(this.globalState.windowWidth)}vp`)
           this.lab(`高度 ${Math.floor(this.globalState.windowHeight)}vp`)
-          this.lab(`导航栏${Math.floor(this.globalState.topRectHeight)}vp`)
-          this.lab(`状态栏${Math.floor(this.globalState.bottomRectHeight)}vp`)
+          this.lab(`状态栏${Math.floor(this.globalState.topRectHeight)}vp`)
+          this.lab(`导航栏${Math.floor(this.globalState.bottomRectHeight)}vp`)
           this.lab(`宽度断点${this.globalState.widthBreakpoint.toString()}`)
           this.lab(`高度断点${this.globalState.heightBreakpoint.toString()}`)
         }

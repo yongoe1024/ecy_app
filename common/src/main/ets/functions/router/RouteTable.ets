@@ -3,6 +3,8 @@
  * 命名规则 {模块名}_{功能名}
  */
 export class RouteTable {
+  /** 应用内部深链 scheme */
+  public static readonly SCHEME: string = "ecy://";
   /** common  **/
   // web
   public static readonly COMMON_WEB: string = "ecy://common/web";

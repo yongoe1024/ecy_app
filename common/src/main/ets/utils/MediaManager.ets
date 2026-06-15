@@ -55,7 +55,7 @@ export class MediaManager {
   private context: Context
   private state: MediaState
   private resolve?: (value: void | PromiseLike<void>) => void;
-  private reject?: (reason?: BusinessError) => void;
+  private reject?: (reason?: Object) => void;
 
   constructor(avPlayer: media.AVPlayer, context: Context, state: MediaState) {
     this.avPlayer = avPlayer;
@@ -104,37 +104,48 @@ export class MediaManager {
    * @throws BusinessError
    */
   async setAndPrepare(index: number, config?: MediaConfig): Promise<void> {
-    return new Promise<void>(async (resolve, reject) => {
+    // 取消上一个仍在等待的 prepare，避免其 Promise 因 resolve/reject 被覆盖而永久挂起
+    this.settle(new Error('setAndPrepare 被新的调用取消'))
+    return new Promise<void>((resolve, reject) => {
       this.resolve = resolve
       this.reject = reject
-      try {
-        await this.avPlayer.reset()
-        if (config) {
-          this.state.mediaList = config.mediaList ?? this.state.mediaList
-          this.state.playMode = config.playMode ?? this.state.playMode
-          this.state.audioRendererInfo = config.audioRendererInfo
-          this.state.surfaceID = config.surfaceID
-        }
-        this.state.index = index
-        if (index < 0 || index >= this.state.mediaList.length) {
-          this.state.index = -1
-          this.settle()
-          return
-        }
-        if (this.state.index >= 0 && this.state.mediaList.length > 0) {
-          await this.setUrl(this.state.mediaList[this.state.index])
-        }
-      } catch (e) {
-        this.settle(e)
-      }
+      // 异步逻辑放到独立方法，避免 async Promise executor 反模式吞掉异常
+      void this.runPrepare(index, config)
     })
+  }
+
+  /**
+   * setAndPrepare 的异步执行体：重置播放器、应用配置并设置资源。
+   * 真正的结算由 stateChange/error 回调通过 settle() 完成。
+   */
+  private async runPrepare(index: number, config?: MediaConfig): Promise<void> {
+    try {
+      await this.avPlayer.reset()
+      if (config) {
+        this.state.mediaList = config.mediaList ?? this.state.mediaList
+        this.state.playMode = config.playMode ?? this.state.playMode
+        this.state.audioRendererInfo = config.audioRendererInfo
+        this.state.surfaceID = config.surfaceID
+      }
+      this.state.index = index
+      if (index < 0 || index >= this.state.mediaList.length) {
+        this.state.index = -1
+        this.settle()
+        return
+      }
+      if (this.state.index >= 0 && this.state.mediaList.length > 0) {
+        await this.setUrl(this.state.mediaList[this.state.index])
+      }
+    } catch (e) {
+      this.settle(e)
+    }
   }
 
   /**
    * 统一结算 setAndPrepare 返回的 Promise，确保只调用一次并清空引用，
    * 避免 prepare/error 失败时外层 Promise 永远挂起。
    */
-  private settle(err?: BusinessError): void {
+  private settle(err?: Object): void {
     if (err) {
       this.reject?.(err)
     } else {
@@ -153,11 +164,11 @@ export class MediaManager {
   }
 
   /**
-   * 销毁
+   * 销毁，释放底层 AVPlayer 资源
    * @throws BusinessError
    */
-  async clear() {
-    this.avPlayer.release()
+  async clear(): Promise<void> {
+    return this.avPlayer.release()
   }
 
   /**

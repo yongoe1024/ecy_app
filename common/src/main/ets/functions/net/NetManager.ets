@@ -30,7 +30,7 @@ export class NetManager {
   private constructor() {
     this.axiosInstance = axios.create({
       baseURL: EnvironmentManager.getInstance().getBaseUrl(),
-      timeout: 5000,
+      timeout: 10000,
     })
     // 添加请求拦截器
     this.axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -45,12 +45,11 @@ export class NetManager {
     // 添加响应拦截器
     this.axiosInstance.interceptors.response.use((response: AxiosResponse) => {
       // 对响应数据做点什么
-
       this.logResponse(response)
       return response.data
     }, (error: AxiosError) => {
-      // 对响应错误做点什么
-      IBestToast.show(error.message)
+      // 对响应错误做点什么：开发环境暴露原始信息便于排查，线上给用户友好提示
+      IBestToast.show(this.isDebug ? error.message : '网络异常，请稍后重试')
       // 打印所有请求的错误响应信息
       this.logError(error)
       return Promise.reject(error);
@@ -77,8 +76,8 @@ export class NetManager {
     if (!this.isDebug) {
       return
     }
-    hilog.debug(DOMAIN, TAG, `request | URL: ${config.baseURL}${config.url}`);
-    hilog.debug(DOMAIN, TAG, `request | Method: ${config.method?.toUpperCase() || 'GET'}`);
+    hilog.debug(DOMAIN, TAG, `request | URL: ${config.url}`);
+    hilog.debug(DOMAIN, TAG, `request | Method: ${config.method?.toUpperCase()}`);
     hilog.debug(DOMAIN, TAG, `request | Headers: ${JSON.stringify(config.headers)}`);
     hilog.debug(DOMAIN, TAG, `request | Params: ${JSON.stringify(config.params)}`);
     hilog.debug(DOMAIN, TAG, `request | Body: ${JSON.stringify(config.data)}`);
@@ -88,20 +87,20 @@ export class NetManager {
     if (!this.isDebug) {
       return
     }
-    hilog.debug(DOMAIN, TAG, `response | URL: ${response.config.baseURL}${response.config.url}`);
+    hilog.debug(DOMAIN, TAG, `response | URL: ${response.config.url}`);
     hilog.debug(DOMAIN, TAG, `response | Status: ${response.status} ${response.statusText}`);
     hilog.debug(DOMAIN, TAG, `response | Data: ${JSON.stringify(response.data)}`);
   }
 
   private logError(error: AxiosError): void {
-    hilog.error(DOMAIN, TAG, `response | URL: ${error?.config?.baseURL}${error?.config?.url}`);
+    hilog.error(DOMAIN, TAG, `response | URL: ${error?.config?.url}`);
+    hilog.error(DOMAIN, TAG, `response | Error: ${error.message || String(error)}`);
     if (error.response) {
       hilog.error(DOMAIN, TAG, `response | Status: ${error.response.status} ${error.response.statusText}`);
+      // 响应体可能较大或含敏感信息，仅在调试环境打印
       if (this.isDebug) {
         hilog.error(DOMAIN, TAG, `response | Data: ${JSON.stringify(error.response.data)}`);
       }
-    } else {
-      hilog.error(DOMAIN, TAG, `response | Error: ${error.message || String(error)}`);
     }
   }
 

@@ -10,6 +10,10 @@ const PREFERENCES_NAME: string = 'ECY_APP';
 export class PreferenceManager {
   private static getPrefs(): preferences.Preferences {
     const state = AppStorageV2.connect(GlobalState)!;
+    // uiAbilityContext 尚未就绪时给出明确错误，避免底层抛出难以定位的异常
+    if (!state.uiAbilityContext) {
+      throw new Error('PreferenceManager: uiAbilityContext 未初始化，请在 Ability 创建后调用');
+    }
     return preferences.getPreferencesSync(state.uiAbilityContext, { name: PREFERENCES_NAME });
   }
 

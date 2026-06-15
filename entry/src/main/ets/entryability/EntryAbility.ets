@@ -49,7 +49,8 @@ export default class EntryAbility extends UIAbility {
     }
     const params = this.globalState.wantParameters
     if (params && params.toUrl) {
-      RouteManager.getInstance().push({ url: String(params.toUrl) })
+      // 仅允许应用内部 scheme 深链，避免外部诱导打开任意网页
+      RouteManager.getInstance().pushDeepLink(String(params.toUrl))
       // 消费后清空，避免重复跳转
       this.globalState.wantParameters = undefined
     }

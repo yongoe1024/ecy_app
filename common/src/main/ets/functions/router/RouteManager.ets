@@ -4,6 +4,10 @@ import { UserManager } from '../user/UserManager';
 import { uri } from '@kit.ArkTS';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { IBestToast } from "@ibestservices/ibest-ui-v2";
+import { hilog } from "@kit.PerformanceAnalysisKit";
+
+const DOMAIN: number = 0x0000;
+const TAG: string = 'RouteManager';
 
 /**
  * 路由管理类
@@ -55,13 +59,28 @@ export class RouteManager {
 
 
   /**
+   * 处理外部深链跳转：仅允许应用内部 scheme，避免被外部诱导打开任意网页（开放重定向）。
+   * @param url want 携带的目标地址
+   */
+  public pushDeepLink(url: string): void {
+    if (!url || !url.startsWith(RouteTable.SCHEME)) {
+      hilog.warn(DOMAIN, TAG, `拒绝非法深链：${url}`);
+      return
+    }
+    this.push({ url })
+  }
+
+  /**
    * 跳转，支持http目标
    */
   public push(options: RouterParams): void {
-    // 需要登录
+    // 需要登录：未登录时跳登录页，并把原 onPop 透传给登录页，避免调用方回调被静默丢弃
     if (options?.needLogin && !UserManager.getInstance().getToken()) {
-      this.pageStack?.pushDestinationByName(RouteTable.MINE_LOGIN, undefined, true)
+      this.pageStack?.pushDestinationByName(RouteTable.MINE_LOGIN, undefined, (popInfo: PopInfo) => {
+        options?.onPop?.(popInfo)
+      }, true)
         .catch((e: BusinessError) => {
+          hilog.error(DOMAIN, TAG, `push login ：${e.code} ${e.message}`);
           IBestToast.show('登录页面不存在')
         })
       return
@@ -72,6 +91,7 @@ export class RouteManager {
       this.pageStack?.pushDestinationByName(RouteTable.COMMON_WEB, { src: options.url }, (popInfo: PopInfo) => {
         options?.onPop?.(popInfo)
       }, options?.animated).catch((e: BusinessError) => {
+        hilog.error(DOMAIN, TAG, `push web ：${e.code} ${e.message}`);
         IBestToast.show('WEB页面跳转失败')
       })
     } else {
@@ -97,6 +117,7 @@ export class RouteManager {
         options.onPop,
         options?.animated
       ).catch((e: BusinessError) => {
+        hilog.error(DOMAIN, TAG, `push ：${e.code} ${e.message}`);
         IBestToast.show('目标页面不存在')
       })
     }

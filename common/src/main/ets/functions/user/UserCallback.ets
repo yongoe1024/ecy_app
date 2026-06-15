@@ -1,4 +1,4 @@
-export class UserCallback {
+export interface UserCallback {
   /**
    * 登录
    */

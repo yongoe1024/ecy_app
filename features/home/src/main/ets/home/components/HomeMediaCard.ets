@@ -9,28 +9,43 @@ export struct HomeMediaCard {
   @Local mediaSummary: string = '等待初始化'
   @Local mediaReady: boolean = false
   mediaManager?: MediaManager
+  // 组件是否已销毁，用于拦截异步创建/回调对已销毁组件的写入
+  private destroyed: boolean = false
 
   async aboutToAppear(): Promise<void> {
     try {
-      this.mediaManager = await MediaManager.create(getContext(this), {
+      const manager = await MediaManager.create(getContext(this), {
         mediaList: [DEMO_AUDIO],
         playMode: PlayMode.SINGLE,
         onChange: (state: MediaState) => {
+          if (this.destroyed) {
+            return
+          }
           this.mediaReady = true
           this.mediaSummary =
             `索引 ${state.index} | ${TimeHelper.formatClock(state.time)} / ${TimeHelper.formatClock(state.duration)} | ${state.isPlay ?
               '播放中' : '暂停'}`
         }
       })
+      // 创建期间组件可能已销毁：立即释放，避免 avPlayer 泄漏
+      if (this.destroyed) {
+        void manager.clear()
+        return
+      }
+      this.mediaManager = manager
       this.mediaReady = true
       this.mediaSummary = '播放器已就绪，可直接播放在线音频'
     } catch (e) {
+      if (this.destroyed) {
+        return
+      }
       this.mediaReady = false
       this.mediaSummary = '播放器初始化失败'
     }
   }
 
   aboutToDisappear(): void {
+    this.destroyed = true
     void this.mediaManager?.clear()
   }
 

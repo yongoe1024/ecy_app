@@ -1,7 +1,10 @@
 import { IBestToast } from '@ibestservices/ibest-ui-v2'
 import { PreferenceManager, UserManager } from 'common'
 import { SectionCard } from '../SectionCard'
+import { hilog } from '@kit.PerformanceAnalysisKit'
 
+const DOMAIN: number = 0x0000;
+const TAG: string = 'HomeStorageCard';
 const DEMO_NOTE_KEY: string = 'demo_note'
 
 @ComponentV2
@@ -16,20 +19,35 @@ export struct HomeStorageCard {
   }
 
   loadStoredValues(): void {
-    this.tokenValue = UserManager.getInstance().getToken() || '尚未写入'
-    this.noteValue = String(PreferenceManager.getSync(DEMO_NOTE_KEY, '点击写入一条演示数据'))
+    try {
+      this.tokenValue = UserManager.getInstance().getToken() || '尚未写入'
+      this.noteValue = String(PreferenceManager.getSync(DEMO_NOTE_KEY, '点击写入一条演示数据'))
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `loadStoredValues ：${e.code} ${e.message}`);
+      this.noteValue = '读取失败'
+    }
   }
 
   saveNote(): void {
-    PreferenceManager.putSync(DEMO_NOTE_KEY, this.noteDraft)
-    this.noteValue = String(PreferenceManager.getSync(DEMO_NOTE_KEY, ''))
-    IBestToast.show('已写入首选项')
+    try {
+      PreferenceManager.putSync(DEMO_NOTE_KEY, this.noteDraft)
+      this.noteValue = String(PreferenceManager.getSync(DEMO_NOTE_KEY, ''))
+      IBestToast.show('已写入首选项')
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `saveNote ：${e.code} ${e.message}`);
+      IBestToast.show('写入失败，请重试')
+    }
   }
 
   clearNote(): void {
-    PreferenceManager.deleteSync(DEMO_NOTE_KEY)
-    this.noteValue = '已清除'
-    IBestToast.show('已删除首选项')
+    try {
+      PreferenceManager.deleteSync(DEMO_NOTE_KEY)
+      this.noteValue = '已清除'
+      IBestToast.show('已删除首选项')
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `clearNote ：${e.code} ${e.message}`);
+      IBestToast.show('删除失败，请重试')
+    }
   }
 
   saveToken(): void {

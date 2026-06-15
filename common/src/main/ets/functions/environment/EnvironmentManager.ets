@@ -35,12 +35,27 @@ export class EnvironmentManager {
       return this.env
     }
     try {
-      this.env = PreferenceManager.getSync('env', EnvEnum.DEV) as EnvEnum
+      const stored = PreferenceManager.getSync('env', EnvEnum.DEV) as string
+      this.env = EnvironmentManager.toEnvEnum(stored)
     } catch (e) {
       hilog.error(DOMAIN, TAG, `getEnv ：${e.code} ${e.message}`);
       this.env = EnvEnum.DEV
     }
     return this.env
+  }
+
+  /** 把持久化的字符串安全转换为 EnvEnum，非法/历史遗留值回退 DEV */
+  private static toEnvEnum(value: string): EnvEnum {
+    switch (value) {
+      case EnvEnum.TEST:
+        return EnvEnum.TEST
+      case EnvEnum.PRD:
+        return EnvEnum.PRD
+      case EnvEnum.DEV:
+        return EnvEnum.DEV
+      default:
+        return EnvEnum.DEV
+    }
   }
 
   setEnv(e: EnvEnum): void {
@@ -51,8 +66,8 @@ export class EnvironmentManager {
         this.env = e
         // 设置环境后重启应用
         this.restartApp()
-      } catch (e) {
-        hilog.error(DOMAIN, TAG, `setEnv ：${e.code} ${e.message}`);
+      } catch (err) {
+        hilog.error(DOMAIN, TAG, `setEnv ：${err.code} ${err.message}`);
       }
     }
   }
@@ -85,7 +100,8 @@ export class EnvironmentManager {
       case EnvEnum.TEST:
         return TEST_BASE_URL
       default:
-        throw new Error("getBaseUrl:不存在的环境")
+        // getEnv 已保证返回合法枚举，这里回退到 DEV 而非抛错
+        return DEV_BASE_URL
     }
   }
 }

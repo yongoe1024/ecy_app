@@ -21,6 +21,9 @@ export class TimeHelper {
   private maxTimeMs: number = 0;
   // 毫秒
   private timeMs: number = 0;
+  // 本轮 interval 的起始墙钟时间与起始计时值，用真实时间差换算 timeMs，避免按 tick 累加产生漂移
+  private startTimestamp: number = 0;
+  private baseTimeMs: number = 0;
   private onTick?: Callback<number>
   private onReachLimit?: Callback<void>
 
@@ -73,21 +76,31 @@ export class TimeHelper {
   }
 
   private startInterval(): void {
+    // 以本轮起点为基准，按真实经过时间换算，避免 setInterval 抖动累积导致计时漂移
+    this.baseTimeMs = this.timeMs;
+    this.startTimestamp = Date.now();
     this.timerId = setInterval(() => {
+      const elapsed = Date.now() - this.startTimestamp;
       if (this.type === TimerType.COUNT_UP) {
-        this.timeMs += this.triggerTime;
-        this.tick();
+        this.timeMs = this.baseTimeMs + elapsed;
         if (this.maxTimeMs > 0 && this.timeMs >= this.maxTimeMs) {
+          this.timeMs = this.maxTimeMs;
+          this.tick();
           this.stop();
           this.onReachLimit?.();
+          return;
         }
-      } else {
-        this.timeMs -= this.triggerTime;
         this.tick();
+      } else {
+        this.timeMs = this.baseTimeMs - elapsed;
         if (this.timeMs <= 0) {
+          this.timeMs = 0;
+          this.tick();
           this.stop();
           this.onReachLimit?.();
+          return;
         }
+        this.tick();
       }
     }, this.triggerTime) as number;
   }
@@ -100,7 +113,7 @@ export class TimeHelper {
     }
   }
 
-  /** 恢复正计时模式下的计时任务，从上次暂停秒数继续累加。 */
+  /** 按当前模式从上次暂停的秒数继续计时（正计时累加、倒计时递减）。 */
   resume(): void {
     this.stop();
     this.tick();

@@ -9,15 +9,15 @@
 export class Breakpoint {
   static ofWidth(point: WidthBreakpoint, xs: Length, sm?: Length, md?: Length, lg?: Length, xl?: Length): Length {
     switch (point) {
-      case 0:
+      case WidthBreakpoint.WIDTH_XS:
         return xs;
-      case 1:
+      case WidthBreakpoint.WIDTH_SM:
         return sm ?? xs;
-      case 2:
+      case WidthBreakpoint.WIDTH_MD:
         return md ?? xs;
-      case 3:
+      case WidthBreakpoint.WIDTH_LG:
         return lg ?? xs;
-      case 4:
+      case WidthBreakpoint.WIDTH_XL:
         return xl ?? xs;
       default:
         return xs
@@ -26,11 +26,11 @@ export class Breakpoint {
 
   static ofHeight(point: HeightBreakpoint, sm: Length, md?: Length, lg?: Length): Length {
     switch (point) {
-      case 0:
+      case HeightBreakpoint.HEIGHT_SM:
         return sm;
-      case 1:
+      case HeightBreakpoint.HEIGHT_MD:
         return md ?? sm;
-      case 2:
+      case HeightBreakpoint.HEIGHT_LG:
         return lg ?? sm;
       default:
         return sm

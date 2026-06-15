@@ -96,6 +96,7 @@ export class UserManager {
       }
     })
     if (res.code === 200) {
+      // 演示占位：直接把 data 当 token 字符串。接入真实后端时应校验/解析返回结构
       this.setToken(res.data as string)
       try {
         this.userModel = await this.getUserInfo(true)
@@ -132,6 +133,7 @@ export class UserManager {
       url: 'getUserInfo',
     })
     if (res.code === 200) {
+      // 演示占位：ESObject 直接赋给 UserModel。接入真实后端时应按字段解析/校验
       this.userModel = res.data
       return this.userModel
     } else {
