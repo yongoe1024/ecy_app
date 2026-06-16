@@ -24,7 +24,7 @@ export * from './user/UserCallback'
 
 export * from './user/UserManager'
 
-export * from './user/UserModel'
+export * from './user/UserInfo'
 
 // webview
 export * from './webview/components/WebComponent'

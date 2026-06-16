@@ -1,6 +1,6 @@
 import { NetManager } from '../net/NetManager';
 import { UserCallback } from './UserCallback';
-import { UserInfo } from './UserModel';
+import { UserInfo } from './UserInfo';
 import { PreferenceManager } from '../../utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { bundleManager } from '@kit.AbilityKit';
@@ -18,14 +18,24 @@ export class UserManager {
   private userInfo?: UserInfo
   private token?: string
 
+  /** 应用版本号（versionName，如 "1.0.0"），取自 AppScope/app.json5 */
   getAppVersion(): string {
-    return bundleManager.getBundleInfoForSelfSync(
-      bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION
-    ).versionName
+    try {
+      return bundleManager.getBundleInfoForSelfSync(
+        bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION
+      ).versionName
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `getAppVersion ：${e.code} ${e.message}`);
+      return ''
+    }
   }
 
-  // 设备信息
-  getDeviceSn(): string {
+  /**
+   * 设备匿名标识 ODID（去掉连字符）。
+   * 注意：这不是设备序列号（真 SN 需 ohos.permission.sn + deviceInfo.serial）；
+   * ODID 在应用卸载重装后会变化，且属设备信息，采集前应在隐私政策中披露。
+   */
+  getDeviceOdid(): string {
     return deviceInfo.ODID.replace(/-/ig, '');
   }
 
@@ -161,7 +171,7 @@ export class UserManager {
       url: 'getUserInfo',
     })
     if (res.code === 200) {
-      // 演示占位：ESObject 直接赋给 userInfo。接入真实后端时应按字段解析/校验
+      // 演示占位：直接整体赋值后端返回。接入真实后端时应按字段解析/校验
       this.userInfo = res.data
       return this.userInfo
     } else {
