@@ -1,7 +1,7 @@
-import { media } from "@kit.MediaKit";
-import { BusinessError } from "@kit.BasicServicesKit";
-import { audio } from "@kit.AudioKit";
-import { hilog } from "@kit.PerformanceAnalysisKit";
+import { media } from '@kit.MediaKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { audio } from '@kit.AudioKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'MediaManager';

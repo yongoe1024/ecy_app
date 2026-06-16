@@ -1,8 +1,10 @@
-import { NetManager } from "../net/NetManager";
-import { UserCallback } from "./UserCallback";
-import { UserModel } from "./UserModel";
-import { PreferenceManager } from "../../utils";
-import { hilog } from "@kit.PerformanceAnalysisKit";
+import { NetManager } from '../net/NetManager';
+import { UserCallback } from './UserCallback';
+import { UserInfo } from './UserModel';
+import { PreferenceManager } from '../../utils';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { bundleManager } from '@kit.AbilityKit';
+import { deviceInfo } from '@kit.BasicServicesKit';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'UserManager';
@@ -13,8 +15,30 @@ const TAG: string = 'UserManager';
 export class UserManager {
   private static instance: UserManager
   private listeners: UserCallback[] = []
-  private userModel?: UserModel
+  private userInfo?: UserInfo
   private token?: string
+
+  getAppVersion(): string {
+    return bundleManager.getBundleInfoForSelfSync(
+      bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION
+    ).versionName
+  }
+
+  // 设备信息
+  getDeviceSn(): string {
+    return deviceInfo.ODID.replace(/-/ig, '');
+  }
+
+  // 系统版本
+  getOsVersion(): string {
+    return deviceInfo.distributionOSVersion;
+  }
+
+  // 设备名
+  getDeviceModel(): string {
+    return deviceInfo.marketName;
+  }
+
 
   private constructor() {
   }
@@ -100,21 +124,20 @@ export class UserManager {
       // 演示占位：直接把 data 当 token 字符串。接入真实后端时应校验/解析返回结构
       this.setToken(res.data)
       try {
-        this.userModel = await this.getUserInfo(true)
-        if (this.userModel) {
-          this.listeners.forEach((item) => {
-            try {
-              item.onLogin?.()
-            } catch (e) {
-              hilog.error(DOMAIN, TAG, `onLogin listener ：${e?.message}`);
-            }
-          })
-        }
+        this.userInfo = await this.getUserInfo(true)
       } catch (e) {
-        this.userModel = undefined
+        this.userInfo = undefined
         this.setToken('')
         return Promise.reject(e)
       }
+      // 登录成功即通知监听者：不依赖 userInfo 真值，避免后端返回 200 但 data 为空时登录态不同步
+      this.listeners.forEach((item) => {
+        try {
+          item.onLogin?.()
+        } catch (e) {
+          hilog.error(DOMAIN, TAG, `onLogin listener ：${e?.message}`);
+        }
+      })
     } else {
       return Promise.reject(new Error(`login failed: code=${res.code}`))
     }
@@ -125,22 +148,22 @@ export class UserManager {
    * @param refresh 是否请求接口刷新数据
    * @returns 不存在则返回undefined
    */
-  async getUserInfo(refresh: boolean = false): Promise<UserModel | undefined> {
+  async getUserInfo(refresh: boolean = false): Promise<UserInfo | undefined> {
     if (!this.getToken()) {
-      this.userModel = undefined
+      this.userInfo = undefined
       return undefined
     }
-    if (this.userModel && !refresh) {
-      return this.userModel
+    if (this.userInfo && !refresh) {
+      return this.userInfo
     }
-    let res = await NetManager.getInstance().request<UserModel>({
+    let res = await NetManager.getInstance().request<UserInfo>({
       method: 'post',
       url: 'getUserInfo',
     })
     if (res.code === 200) {
-      // 演示占位：ESObject 直接赋给 UserModel。接入真实后端时应按字段解析/校验
-      this.userModel = res.data
-      return this.userModel
+      // 演示占位：ESObject 直接赋给 userInfo。接入真实后端时应按字段解析/校验
+      this.userInfo = res.data
+      return this.userInfo
     } else {
       return Promise.reject(new Error(`getUserInfo failed: code=${res.code}`))
     }
@@ -164,7 +187,7 @@ export class UserManager {
       hilog.warn(DOMAIN, TAG, `logout 网络异常，清理本地状态：${e?.message}`);
     }
     // 无论服务端是否成功，都清理本地登录态
-    this.userModel = undefined
+    this.userInfo = undefined
     this.setToken('')
     this.listeners.forEach((item) => {
       try {

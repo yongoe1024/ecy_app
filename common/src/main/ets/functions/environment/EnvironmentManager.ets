@@ -1,8 +1,8 @@
-import { PreferenceManager } from "../../utils";
-import { EnvEnum, GlobalState } from "./GlobalModel";
-import { AppStorageV2 } from "@kit.ArkUI";
-import { Want } from "@kit.AbilityKit";
-import { hilog } from "@kit.PerformanceAnalysisKit";
+import { PreferenceManager } from '../../utils';
+import { EnvEnum, GlobalState } from './GlobalModel';
+import { AppStorageV2 } from '@kit.ArkUI';
+import { Want } from '@kit.AbilityKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'EnvironmentManager';
@@ -102,7 +102,7 @@ export class EnvironmentManager {
       case EnvEnum.TEST:
         return TEST_BASE_URL
       default:
-        // getEnv 已保证返回合法枚举，这里回退到 DEV 而非抛错
+      // getEnv 已保证返回合法枚举，这里回退到 DEV 而非抛错
         return DEV_BASE_URL
     }
   }

@@ -65,7 +65,7 @@ export class NetManager {
    * @param config axios配置
    * @returns 请求结果，只要服务器返回，都算成功，网络错误走catch
    */
-  request<T = ESObject>(config: AxiosRequestConfig): Promise<ResponseModel<T>> {
+  request<T = Object>(config: AxiosRequestConfig): Promise<ResponseModel<T>> {
     return this.axiosInstance.request<ResponseModel<T>, ResponseModel<T>>(config)
   }
 
@@ -110,22 +110,35 @@ export class NetManager {
    * @returns ResponseModel
    */
   async upload(context: Context, params: UploadParams): Promise<ResponseModel> {
-    const cachePath = await this.copyToCache(context, params.filePath)
+    // 真实落盘路径，上传结束后需删除，避免缓存目录堆积
+    const fileName = await this.copyToCache(context, params.filePath)
+    const realPath = `${context.cacheDir}/${fileName}`
     let formData = new FormData()
-    formData.append('file', cachePath);
-    // 发送请求
-    return this.request({
-      url: params.url,
-      method: 'post',
-      data: formData,
-      headers: { 'Content-Type': 'multipart/form-data' },
-      context: context,
-      onUploadProgress: (progressEvent: AxiosProgressEvent): void => {
-        if (progressEvent && progressEvent.loaded && progressEvent.total) {
-          params.onProgress?.(progressEvent.loaded / progressEvent.total * 100)
+    formData.append('file', `internal://cache/${fileName}`);
+    try {
+      // 发送请求
+      return await this.request({
+        url: params.url,
+        method: 'post',
+        data: formData,
+        headers: { 'Content-Type': 'multipart/form-data' },
+        context: context,
+        onUploadProgress: (progressEvent: AxiosProgressEvent): void => {
+          if (progressEvent && progressEvent.loaded && progressEvent.total) {
+            params.onProgress?.(progressEvent.loaded / progressEvent.total * 100)
+          }
         }
+      })
+    } finally {
+      // 上传已结束（成功/失败均到此），清理临时文件；删除失败不影响上传结果
+      try {
+        if (fileIo.accessSync(realPath)) {
+          fileIo.unlinkSync(realPath)
+        }
+      } catch (e) {
+        hilog.warn(DOMAIN, TAG, `upload 清理缓存文件失败 ：${e?.code} ${e?.message}`);
       }
-    })
+    }
   }
 
   /**
@@ -154,7 +167,8 @@ export class NetManager {
   }
 
   /**
-   * 将文件复制到缓存，重命名，得到 internal://cache
+   * 将文件复制到缓存并重命名，返回缓存内的文件名（uuid + 扩展名）。
+   * 调用方据此拼出上传用的 internal://cache/<name> 以及真实路径 <cacheDir>/<name>。
    * @throws BusinessError
    */
   private async copyToCache(context: Context, path: string): Promise<string> {
@@ -168,6 +182,6 @@ export class NetManager {
     } finally {
       fileIo.closeSync(pathIO)
     }
-    return `internal://cache/${uuid}`
+    return uuid
   }
 }

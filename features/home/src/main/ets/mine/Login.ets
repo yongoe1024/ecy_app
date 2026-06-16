@@ -1,6 +1,6 @@
-import { IBestButton, IBestNavBar, IBestToast } from "@ibestservices/ibest-ui-v2"
-import { RouteManager, UserManager } from "common"
-import { hilog } from "@kit.PerformanceAnalysisKit"
+import { IBestButton, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui-v2';
+import { RouteManager, UserManager } from 'common';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'LoginPage';

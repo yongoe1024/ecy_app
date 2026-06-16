@@ -1,8 +1,8 @@
-import { webview } from "@kit.ArkWeb"
-import { IBestIcon, IBestNavBar } from "@ibestservices/ibest-ui-v2"
-import { WebComponent } from "../components/WebComponent"
-import { RouteManager } from "../.."
-import { hilog } from "@kit.PerformanceAnalysisKit"
+import { webview } from '@kit.ArkWeb'
+import { IBestIcon, IBestNavBar } from '@ibestservices/ibest-ui-v2'
+import { WebComponent } from '../components/WebComponent'
+import { hilog } from '@kit.PerformanceAnalysisKit'
+import { RouteManager } from '../..';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'WebViewPage';

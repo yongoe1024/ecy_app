@@ -46,7 +46,7 @@ export struct HomeMediaCard {
 
   aboutToDisappear(): void {
     this.destroyed = true
-    void this.mediaManager?.clear()
+    this.mediaManager?.clear().catch()
   }
 
   @LocalBuilder

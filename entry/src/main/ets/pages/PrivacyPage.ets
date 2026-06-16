@@ -6,9 +6,8 @@ import { hilog } from "@kit.PerformanceAnalysisKit";
 
 const DOMAIN = 0x0000;
 const TAG = 'PrivacyPage'
+
 // TODO: 替换为真实的协议页面或链接（建议接入 WebViewPage / 内置协议页）
-const SERVICE_AGREEMENT_URL: string = ''
-const PRIVACY_POLICY_URL: string = ''
 
 @Entry
 @ComponentV2
@@ -67,7 +66,12 @@ struct PrivacyPage {
               Text('隐私保护说明')
                 .fontSize(12)
                 .fontColor('#5B6B83')
-                .padding({ left: 10, right: 10, top: 6, bottom: 6 })
+                .padding({
+                  left: 10,
+                  right: 10,
+                  top: 6,
+                  bottom: 6
+                })
                 .backgroundColor('#F6F9FF')
                 .borderRadius(999)
             }
@@ -136,7 +140,7 @@ struct PrivacyPage {
                   .fontColor('#2563EB')
                   .decoration({ type: TextDecorationType.Underline, color: '#2563EB' })
                   .onClick(() => {
-                    // TODO: 接入后跳转《ECY-APP服务协议》(SERVICE_AGREEMENT_URL)
+                    // TODO: 接入后跳转《ECY-APP服务协议》真实协议页/链接
                     IBestToast.show('协议页面待接入')
                   })
 
@@ -150,7 +154,7 @@ struct PrivacyPage {
                   .fontColor('#2563EB')
                   .decoration({ type: TextDecorationType.Underline, color: '#2563EB' })
                   .onClick(() => {
-                    // TODO: 接入后跳转《隐私政策》(PRIVACY_POLICY_URL)
+                    // TODO: 接入后跳转《隐私政策》真实协议页/链接
                     IBestToast.show('协议页面待接入')
                   })
 
