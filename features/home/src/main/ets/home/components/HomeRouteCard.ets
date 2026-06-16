@@ -12,6 +12,14 @@ export struct HomeRouteCard {
     })
   }
 
+  openFullWebDemo2(): void {
+    RouteManager.getInstance().push({
+      url: DEMO_WEB,
+      animated: true,
+      needLogin: true
+    })
+  }
+
   @LocalBuilder
   cardContent() {
     Button('路由到 不存在 页面')
@@ -24,6 +32,9 @@ export struct HomeRouteCard {
       .backgroundColor('#7C3AED')
     Button('路由到 Web 页面')
       .onClick(() => this.openFullWebDemo())
+      .backgroundColor('#7C3AED')
+    Button('需要登录，路由到 Web 页面')
+      .onClick(() => this.openFullWebDemo2())
       .backgroundColor('#7C3AED')
   }
 

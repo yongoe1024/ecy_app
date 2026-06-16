@@ -28,24 +28,55 @@ export class PreferenceManager {
     return PreferenceManager.prefs;
   }
 
-  /** @throws BusinessError*/
+  /**
+   * 读取原始值（联合类型 ValueType）。多数场景建议改用类型化的
+   * getStringSync / getBooleanSync / getNumberSync，避免在调用处强转。
+   * @throws Error
+   */
   static getSync(key: string, defaultValue?: preferences.ValueType): preferences.ValueType {
     return PreferenceManager.getPrefs().getSync(key, defaultValue);
   }
 
-  /** @throws BusinessError*/
+  /**
+   * 读取字符串：key 不存在或存储的不是字符串时返回 defaultValue。
+   * @throws Error
+   */
+  static getStringSync(key: string, defaultValue: string = ''): string {
+    const value = PreferenceManager.getPrefs().getSync(key, defaultValue);
+    return typeof value === 'string' ? value : defaultValue;
+  }
+
+  /**
+   * 读取布尔：key 不存在或存储的不是布尔时返回 defaultValue。
+   * @throws Error
+   */
+  static getBooleanSync(key: string, defaultValue: boolean = false): boolean {
+    const value = PreferenceManager.getPrefs().getSync(key, defaultValue);
+    return typeof value === 'boolean' ? value : defaultValue;
+  }
+
+  /**
+   * 读取数字：key 不存在或存储的不是数字时返回 defaultValue。
+   * @throws Error
+   */
+  static getNumberSync(key: string, defaultValue: number = 0): number {
+    const value = PreferenceManager.getPrefs().getSync(key, defaultValue);
+    return typeof value === 'number' ? value : defaultValue;
+  }
+
+  /** @throws Error */
   static putSync(key: string, value: preferences.ValueType): void {
     const pre = PreferenceManager.getPrefs();
     pre.putSync(key, value);
     pre.flushSync();
   }
 
-  /** @throws BusinessError*/
+  /** @throws Error */
   static hasSync(key: string): boolean {
     return PreferenceManager.getPrefs().hasSync(key);
   }
 
-  /** @throws BusinessError */
+  /** @throws Error */
   static deleteSync(key: string): void {
     const pre = PreferenceManager.getPrefs();
     pre.deleteSync(key);

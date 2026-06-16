@@ -21,7 +21,11 @@ interface LoginRouteParams {
 }
 
 /**
- * 路由管理类
+ * 路由管理类。
+ *
+ * 错误处理约定（UI 命令层）：所有导航方法均为 best-effort 的 void 命令，
+ * **永不 throw / reject**——失败时仅记录日志，必要时以 Toast 提示用户（如目标页不存在）。
+ * 调用方无需 try/catch；如需在出栈后拿返回值，用 RouterParams.onPop 回调。
  */
 export class RouteManager {
   private static instance: RouteManager

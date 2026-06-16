@@ -1,7 +1,11 @@
 import { MediaManager, MediaState, PlayMode, TimeHelper } from 'common'
 import { IBestToast } from '@ibestservices/ibest-ui-v2'
+import { hilog } from '@kit.PerformanceAnalysisKit'
+import { BusinessError } from '@kit.BasicServicesKit'
 import { SectionCard } from '../SectionCard'
 
+const DOMAIN: number = 0x0000;
+const TAG: string = 'HomeMediaCard';
 const DEMO_AUDIO: string = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
 
 @ComponentV2
@@ -31,7 +35,9 @@ export struct HomeMediaCard {
       })
       // 创建期间组件可能已销毁：立即释放，避免 avPlayer 泄漏
       if (this.destroyed) {
-        void manager.clear()
+        manager.clear().catch((e: BusinessError) => {
+          hilog.warn(DOMAIN, TAG, `clear ：${e?.code} ${e?.message}`);
+        })
         return
       }
       this.mediaManager = manager
@@ -48,7 +54,10 @@ export struct HomeMediaCard {
 
   aboutToDisappear(): void {
     this.destroyed = true
-    this.mediaManager?.clear().catch()
+    // clear() 失败不影响销毁流程，但需记录而非用空 catch 静默吞掉
+    this.mediaManager?.clear().catch((e: BusinessError) => {
+      hilog.warn(DOMAIN, TAG, `clear ：${e?.code} ${e?.message}`);
+    })
     this.mediaManager = undefined
     this.mediaReady = false
   }

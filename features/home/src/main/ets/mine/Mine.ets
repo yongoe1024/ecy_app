@@ -13,13 +13,17 @@ export struct Mine {
   @Local loginTip: string = '登录后可同步订单、地址与会员权益'
   @Local isLoggedIn: boolean = false
   private userListener?: UserCallback
+  // 组件是否已销毁，用于拦截 getUserInfo 等异步回调对已销毁组件的写入
+  private destroyed: boolean = false
 
   aboutToAppear(): void {
+    this.destroyed = false
     this.registerUserListener()
     void this.loadUserState(false)
   }
 
   aboutToDisappear(): void {
+    this.destroyed = true
     if (this.userListener) {
       UserManager.getInstance().unRegisterListener(this.userListener)
     }
@@ -59,6 +63,10 @@ export struct Mine {
     }
     try {
       const userInfo = await UserManager.getInstance().getUserInfo()
+      // await 期间组件可能已销毁，避免写入已销毁组件的状态
+      if (this.destroyed) {
+        return
+      }
       this.userName = userInfo?.name || userInfo?.phone || '已登录用户'
     } catch (e) {
       hilog.warn(DOMAIN, TAG, `loadUserState ：${e?.message}`);

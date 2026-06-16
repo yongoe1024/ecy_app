@@ -1,13 +1,24 @@
 import { EnvEnum, EnvironmentManager, GlobalState } from 'common'
 import { AppStorageV2 } from '@kit.ArkUI'
+import { IBestToast } from '@ibestservices/ibest-ui-v2'
+import { hilog } from '@kit.PerformanceAnalysisKit'
 import { SectionCard } from '../SectionCard'
+
+const DOMAIN: number = 0x0000;
+const TAG: string = 'HomeEnvCard';
 
 @ComponentV2
 export struct HomeEnvCard {
   @Local globalState: GlobalState = AppStorageV2.connect(GlobalState)!
 
   switchEnv(env: EnvEnum): void {
-    EnvironmentManager.getInstance().setEnv(env)
+    // setEnv 持久化失败会抛出（写变更不静默吞错），此处兜底提示
+    try {
+      EnvironmentManager.getInstance().setEnv(env)
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `switchEnv ：${e.code} ${e.message}`);
+      IBestToast.show('环境切换失败，请重试')
+    }
   }
 
   @LocalBuilder

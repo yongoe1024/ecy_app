@@ -21,7 +21,7 @@ export struct HomeStorageCard {
   loadStoredValues(): void {
     try {
       this.tokenValue = UserManager.getInstance().getToken() || '尚未写入'
-      this.noteValue = String(PreferenceManager.getSync(DEMO_NOTE_KEY, '点击写入一条演示数据'))
+      this.noteValue = PreferenceManager.getStringSync(DEMO_NOTE_KEY, '点击写入一条演示数据')
     } catch (e) {
       hilog.error(DOMAIN, TAG, `loadStoredValues ：${e.code} ${e.message}`);
       this.noteValue = '读取失败'
@@ -31,7 +31,7 @@ export struct HomeStorageCard {
   saveNote(): void {
     try {
       PreferenceManager.putSync(DEMO_NOTE_KEY, this.noteDraft)
-      this.noteValue = String(PreferenceManager.getSync(DEMO_NOTE_KEY, ''))
+      this.noteValue = PreferenceManager.getStringSync(DEMO_NOTE_KEY, '')
       IBestToast.show('已写入首选项')
     } catch (e) {
       hilog.error(DOMAIN, TAG, `saveNote ：${e.code} ${e.message}`);
@@ -51,15 +51,25 @@ export struct HomeStorageCard {
   }
 
   saveToken(): void {
-    UserManager.getInstance().setToken(this.tokenDraft)
-    this.tokenValue = UserManager.getInstance().getToken() || '尚未写入'
-    IBestToast.show('Token 已写入')
+    try {
+      UserManager.getInstance().setToken(this.tokenDraft)
+      this.tokenValue = UserManager.getInstance().getToken() || '尚未写入'
+      IBestToast.show('Token 已写入')
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `saveToken ：${e.code} ${e.message}`);
+      IBestToast.show('写入失败，请重试')
+    }
   }
 
   clearToken(): void {
-    UserManager.getInstance().setToken('')
-    this.tokenValue = '已清空'
-    IBestToast.show('Token 已清空')
+    try {
+      UserManager.getInstance().setToken('')
+      this.tokenValue = '已清空'
+      IBestToast.show('Token 已清空')
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `clearToken ：${e.code} ${e.message}`);
+      IBestToast.show('清空失败，请重试')
+    }
   }
 
   @LocalBuilder

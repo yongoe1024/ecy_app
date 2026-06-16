@@ -37,7 +37,7 @@ export class EnvironmentManager {
       return this.env
     }
     try {
-      const stored = PreferenceManager.getSync('env', EnvEnum.DEV) as string
+      const stored = PreferenceManager.getStringSync('env', EnvEnum.DEV)
       this.env = EnvironmentManager.toEnvEnum(stored)
     } catch (e) {
       hilog.error(DOMAIN, TAG, `getEnv ：${e.code} ${e.message}`);
@@ -60,18 +60,20 @@ export class EnvironmentManager {
     }
   }
 
+  /**
+   * 切换环境并重启应用使其生效。
+   * 约定：写变更不静默吞错——持久化失败时抛出，调用方需感知（环境未切换）。
+   * @throws Error 持久化失败
+   */
   setEnv(e: EnvEnum): void {
     const currentEnv = this.getEnv()
-    if (currentEnv !== e) {
-      try {
-        PreferenceManager.putSync('env', e)
-        this.env = e
-        // 设置环境后重启应用
-        this.restartApp()
-      } catch (err) {
-        hilog.error(DOMAIN, TAG, `setEnv ：${err.code} ${err.message}`);
-      }
+    if (currentEnv === e) {
+      return
     }
+    PreferenceManager.putSync('env', e)
+    this.env = e
+    // 设置环境后重启应用
+    this.restartApp()
   }
 
   /**

@@ -51,6 +51,23 @@ ecy_app
 
 ---
 
+## 错误处理约定
+
+对外 API 按「层」统一错误处理，按下表处理即可正确消费结果。失败时：领域层异步方法 reject `AppError`（继承 `Error`、带 `code`）；同步工具写失败与底层 SDK（avPlayer、定位、Preferences 等）错误以原生 `Error` / `BusinessError` 透传。均可读 `e.message`（多数含 `e.code`）。
+
+| 层 | 代表方法 | 失败时 | 调用方处理 |
+|----|---------|--------|-----------|
+| 同步工具·读查询 | `PreferenceManager.getStringSync` / `UserManager.getToken` / `EnvironmentManager.getEnv` | 记日志并返回安全默认值（`''`/`false`/`DEV`） | 直接用返回值，默认值即「无 / 未登录」 |
+| 同步工具·写变更 | `PreferenceManager.putSync/deleteSync` / `UserManager.setToken` / `EnvironmentManager.setEnv` | **throw**（不静默吞错） | `try/catch` |
+| 传输层 | `NetManager.request/upload/download` | 有响应即 resolve（**即使 `res.code !== 200`**）；仅网络 / 超时 reject | **先查 `res.code`** + `catch` 网络错误 |
+| 领域层（异步） | `UserManager.login` / `LocationManager.*` / `MediaManager.*` | `Promise.reject(AppError)` | `try/catch` 或 `.catch` |
+| UI 命令 | `RouteManager.push / pop*` | best-effort：记日志 + Toast，**永不抛 / reject** | 直接调用 |
+| 状态查询（异步） | `UserManager.getUserInfo / refreshUserInfo` | `undefined` = 未登录（非错误）；出错走 reject | 先判 `undefined`，再 `try/catch` |
+
+> ⚠️ 安全提示：`UserManager` 的 token 当前以**明文**存储于 Preferences（HarmonyOS Preferences 无加密层），仅适合脚手架演示；上生产请替换为加密存储（HUKS / 关系型数据库加密）。`EnvironmentManager` 中生产 / 测试地址为占位（`myprod.com` / `mytest.com`），DEV 为明文 http，请按需替换并配置网络安全策略。
+
+---
+
 ## API 使用示例
 
 ### 1. 环境切换
@@ -68,9 +85,13 @@ EnvironmentManager.getInstance().setEnv(EnvEnum.DEV)        // 切换环境（�
 ```ts
 import { PreferenceManager } from 'common'
 
-PreferenceManager.putSync('demo_key', 'demo_value')
-const value = PreferenceManager.getSync('demo_key', '')
-PreferenceManager.deleteSync('demo_key')
+try {
+  PreferenceManager.putSync('demo_key', 'demo_value')           // 写变更：失败会抛出
+  const value = PreferenceManager.getStringSync('demo_key', '') // 类型化读取，免强转
+  PreferenceManager.deleteSync('demo_key')
+} catch (e) {
+  // 处理存储异常
+}
 ```
 
 ### 3. 用户 Token
@@ -98,10 +119,18 @@ RouteManager.getInstance().pop()
 ```ts
 import { NetManager } from 'common'
 
-const res = await NetManager.getInstance().request({
-  method: 'get',
-  url: 'https://httpbin.org/get'
-})
+try {
+  const res = await NetManager.getInstance().request({
+    method: 'get',
+    url: 'https://httpbin.org/get'
+  })
+  // 传输层只保证「服务器有响应」，业务是否成功要看 res.code
+  if (res.code === 200) {
+    // 消费 res.data
+  }
+} catch (e) {
+  // 仅网络错误 / 超时会走到这里
+}
 ```
 
 ### 6. 权限申请
@@ -148,9 +177,13 @@ const geo = await LocationManager.getInstance().getAddressesFromName('上海中�
 ```ts
 import { UserManager } from 'common'
 
-await UserManager.getInstance().login('13800138000', '1234')
-const userInfo = await UserManager.getInstance().getUserInfo()
-await UserManager.getInstance().logout()
+try {
+  await UserManager.getInstance().login('13800138000', '1234')  // 失败 reject(AppError)
+  const userInfo = await UserManager.getInstance().getUserInfo() // 未登录返回 undefined
+  await UserManager.getInstance().logout()
+} catch (e) {
+  // 登录 / 登出失败处理（含 token 持久化失败）
+}
 ```
 
 ### 10. 断点响应式布局

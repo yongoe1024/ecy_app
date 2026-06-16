@@ -1,3 +1,6 @@
+// error
+export * from './AppError'
+
 // environment
 export * from './environment/GlobalModel'
 

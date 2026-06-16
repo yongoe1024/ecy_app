@@ -6,6 +6,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { bundleManager } from '@kit.AbilityKit';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { ResponseModel } from '..';
+import { AppError } from '../AppError';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'UserManager';
@@ -83,7 +84,8 @@ export class UserManager {
   }
 
   /**
-   * 获取token，会持久化
+   * 获取 token（会读取持久化）。
+   * 约定：读查询，存储异常按「未登录」处理——返回 '' 并记日志（被请求拦截器同步调用，故不抛出）。
    */
   getToken(): string {
     // 已登录
@@ -92,7 +94,7 @@ export class UserManager {
     }
     try {
       // 重启app拿历史记录
-      let token = PreferenceManager.getSync('token', '') as string
+      let token = PreferenceManager.getStringSync('token', '')
       if (token) {
         this.token = token
         return token
@@ -106,23 +108,20 @@ export class UserManager {
   }
 
   /**
-   * 设置token，会持久化
+   * 设置 token，并持久化。持久化成功后才更新内存，避免落盘失败导致内存与磁盘不一致。
+   * 约定：写变更不静默吞错——持久化失败时抛出，调用方需感知（如 login/logout 会因此 reject）。
+   * @throws Error 持久化失败
    */
   setToken(str: string): void {
-    try {
-      PreferenceManager.putSync('token', str)
-      // 持久化成功后再更新内存，避免落盘失败导致内存与磁盘不一致
-      this.token = str
-    } catch (e) {
-      hilog.error(DOMAIN, TAG, `setToken ：${e.code} ${e.message}`);
-    }
+    PreferenceManager.putSync('token', str)
+    this.token = str
   }
 
   /**
-   * 登录
+   * 登录：确立会话。
+   * 约定：失败时 Promise.reject(AppError)——业务码非 200，或 setToken 持久化失败。
    * @param phone 手机号
    * @param code 验证码
-   * @returns 登录结果
    */
   async login(phone: string, code: string): Promise<void> {
     // const res = await NetManager.getInstance().request<string>({
@@ -150,13 +149,14 @@ export class UserManager {
         }
       })
     } else {
-      return Promise.reject(new Error(`login failed: code=${res.code}`))
+      return Promise.reject(new AppError(res.code, `login failed: code=${res.code}`))
     }
   }
 
   /**
    * 获取用户信息：优先返回内存缓存，未缓存时调用接口拉取一次（懒加载）。
    * 由使用者按需调用，登录流程不再预取。
+   * 约定：未登录返回 undefined（非错误）；网络/业务失败走 Promise.reject(AppError)。
    * @returns 未登录返回 undefined
    */
   async getUserInfo(): Promise<UserInfo | undefined> {
@@ -172,6 +172,7 @@ export class UserManager {
 
   /**
    * 强制从接口刷新用户信息并更新缓存。
+   * 约定：未登录返回 undefined（非错误）；网络/业务失败走 Promise.reject(AppError)。
    * @returns 未登录返回 undefined
    */
   async refreshUserInfo(): Promise<UserInfo | undefined> {
@@ -197,7 +198,7 @@ export class UserManager {
       this.notifyUserInfoChanged()
       return this.userInfo
     } else {
-      return Promise.reject(new Error(`getUserInfo failed: code=${res.code}`))
+      return Promise.reject(new AppError(res.code, `getUserInfo failed: code=${res.code}`))
     }
   }
 
@@ -215,13 +216,15 @@ export class UserManager {
   }
 
   /**
-   * 退出登录
-   * @returns
+   * 退出登录。
+   * 约定：先清持久化 token，失败则整体 reject（避免「UI 已登出但磁盘仍存 token」的幽灵会话）；
+   * 清理成功后再清内存缓存、通知监听者。
+   * @throws Error setToken 持久化失败时透传
    */
   async logout(): Promise<void> {
-    // 无论服务端是否成功，都清理本地登录态
-    this.userInfo = undefined
+    // 先清持久化 token：失败则 reject，后续内存清理/通知都不执行
     this.setToken('')
+    this.userInfo = undefined
     this.notifyUserInfoChanged()
     this.listeners.forEach((item) => {
       try {

@@ -61,9 +61,11 @@ export class NetManager {
   }
 
   /**
-   * 自定义请求
+   * 自定义请求。
+   * 约定（传输层）：只要服务器有响应就 resolve（**即使业务码 res.code !== 200**）；
+   * 仅网络错误 / 超时走 catch。因此调用方必须先检查 res.code，再消费 res.data。
    * @param config axios配置
-   * @returns 请求结果，只要服务器返回，都算成功，网络错误走catch
+   * @returns ResponseModel（resolve 不代表业务成功）
    */
   request<T = Object>(config: AxiosRequestConfig): Promise<ResponseModel<T>> {
     return this.axiosInstance.request<ResponseModel<T>, ResponseModel<T>>(config)
@@ -75,9 +77,27 @@ export class NetManager {
     }
     hilog.debug(DOMAIN, TAG, `request | URL: ${config.url}`);
     hilog.debug(DOMAIN, TAG, `request | Method: ${config.method?.toUpperCase()}`);
-    hilog.debug(DOMAIN, TAG, `request | Headers: ${JSON.stringify(config.headers)}`);
+    // 脱敏后再打印：避免 token 等敏感头泄漏到日志
+    hilog.debug(DOMAIN, TAG, `request | Headers: ${NetManager.maskHeaders(config.headers)}`);
     hilog.debug(DOMAIN, TAG, `request | Params: ${JSON.stringify(config.params)}`);
     hilog.debug(DOMAIN, TAG, `request | Body: ${JSON.stringify(config.data)}`);
+  }
+
+  /** 脱敏请求头：Authorization 以 *** 替代，避免 token 泄漏到日志 */
+  private static maskHeaders(headers: Object): string {
+    if (!headers) {
+      return '{}'
+    }
+    try {
+      const source = headers as Record<string, Object>
+      const masked: Record<string, Object> = {}
+      Object.keys(source).forEach((key: string) => {
+        masked[key] = key.toLowerCase() === 'authorization' ? '***' : source[key]
+      })
+      return JSON.stringify(masked)
+    } catch (e) {
+      return '[unserializable headers]'
+    }
   }
 
   private logResponse(response: AxiosResponse): void {
@@ -149,9 +169,13 @@ export class NetManager {
    * @returns ResponseModel
    */
   async download(context: Context, params: DownloadParams): Promise<ResponseModel> {
-    // 目标文件已存在时先删除，避免 axios 下载失败
-    if (fileIo.accessSync(params.filePath)) {
-      fileIo.unlinkSync(params.filePath)
+    // 目标文件已存在时先删除，避免 axios 下载失败；删除失败不应中断下载
+    try {
+      if (fileIo.accessSync(params.filePath)) {
+        fileIo.unlinkSync(params.filePath)
+      }
+    } catch (e) {
+      hilog.warn(DOMAIN, TAG, `download 预清理旧文件失败 ：${e?.code} ${e?.message}`);
     }
     return this.request({
       url: params.url,
