@@ -13,8 +13,10 @@ export struct HomeMediaCard {
   private destroyed: boolean = false
 
   async aboutToAppear(): Promise<void> {
+    this.destroyed = false
     try {
-      const manager = await MediaManager.create(getContext(this), {
+      const context = this.getUIContext().getHostContext() as Context
+      const manager = await MediaManager.create(context, {
         mediaList: [DEMO_AUDIO],
         playMode: PlayMode.SINGLE,
         onChange: (state: MediaState) => {
@@ -47,6 +49,8 @@ export struct HomeMediaCard {
   aboutToDisappear(): void {
     this.destroyed = true
     this.mediaManager?.clear().catch()
+    this.mediaManager = undefined
+    this.mediaReady = false
   }
 
   @LocalBuilder

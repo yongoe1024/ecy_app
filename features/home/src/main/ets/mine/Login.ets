@@ -5,6 +5,17 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 const DOMAIN: number = 0x0000;
 const TAG: string = 'LoginPage';
 
+interface LoginPageParams {
+  targetPage?: string
+  targetParams?: Record<string, ESObject>
+}
+
+interface LoginSuccessResult {
+  loginSuccess: boolean
+  targetPage: string
+  targetParams?: Record<string, ESObject>
+}
+
 @Builder
 export function LoginPageBuilder() {
   LoginPage()
@@ -19,6 +30,8 @@ export struct LoginPage {
   @Local phone: string = ''
   @Local code: string = ''
   @Local loading: boolean = false
+  @Local targetPage: string = ''
+  targetParams?: Record<string, ESObject>
 
   async doLogin(): Promise<void> {
     if (!this.phone || !this.code) {
@@ -29,7 +42,18 @@ export struct LoginPage {
     try {
       await UserManager.getInstance().login(this.phone, this.code)
       IBestToast.show('登录成功')
-      RouteManager.getInstance().pop()
+      if (this.targetPage) {
+        let result: LoginSuccessResult = {
+          loginSuccess: true,
+          targetPage: this.targetPage
+        }
+        if (this.targetParams) {
+          result.targetParams = this.targetParams
+        }
+        RouteManager.getInstance().popResult(result)
+      } else {
+        RouteManager.getInstance().pop()
+      }
     } catch (e) {
       hilog.error(DOMAIN, TAG, `login ：${e?.code} ${e?.message}`);
       IBestToast.show('登录失败，请检查网络或账号')
@@ -72,5 +96,13 @@ export struct LoginPage {
       .width('100%')
     }
     .hideTitleBar(true)
+    .onReady((context: NavDestinationContext) => {
+      const params = context.pathInfo.param as LoginPageParams
+      const targetPage = params?.targetPage
+      if (targetPage) {
+        this.targetPage = targetPage
+      }
+      this.targetParams = params?.targetParams
+    })
   }
 }

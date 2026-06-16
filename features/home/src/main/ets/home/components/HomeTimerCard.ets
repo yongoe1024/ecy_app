@@ -15,7 +15,8 @@ export struct HomeTimerCard {
   }
 
   aboutToDisappear(): void {
-    this.timer?.stop()
+    this.timer?.destroy()
+    this.timer = undefined
   }
 
   prepareTimer(): void {

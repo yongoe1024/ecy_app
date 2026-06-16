@@ -20,6 +20,9 @@ export enum PlayMode {
   ONCE
 }
 
+/**
+ * 播放器配置
+ */
 export interface MediaConfig {
   playMode: PlayMode
   // 支持http链接、rawfile的文件名
@@ -111,7 +114,7 @@ export class MediaManager {
       this.resolve = resolve
       this.reject = reject
       // 异步逻辑放到独立方法，避免 async Promise executor 反模式吞掉异常
-      void this.runPrepare(index, config)
+      this.runPrepare(index, config)
     })
   }
 

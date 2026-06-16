@@ -5,6 +5,7 @@ import { PreferenceManager } from '../../utils';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { bundleManager } from '@kit.AbilityKit';
 import { deviceInfo } from '@kit.BasicServicesKit';
+import { ResponseModel } from '..';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'UserManager';
@@ -85,10 +86,12 @@ export class UserManager {
    * 获取token，会持久化
    */
   getToken(): string {
+    // 已登录
     if (this.token) {
       return this.token
     }
     try {
+      // 重启app拿历史记录
       let token = PreferenceManager.getSync('token', '') as string
       if (token) {
         this.token = token
@@ -122,25 +125,23 @@ export class UserManager {
    * @returns 登录结果
    */
   async login(phone: string, code: string): Promise<void> {
-    const res = await NetManager.getInstance().request<string>({
-      method: 'post',
-      url: 'login',
-      data: {
-        phone: phone,
-        code: code
-      }
-    })
+    // const res = await NetManager.getInstance().request<string>({
+    //   method: 'post',
+    //   url: 'login',
+    //   data: {
+    //     phone: phone,
+    //     code: code
+    //   }
+    // })
+    const res: ResponseModel<string> = {
+      code: 200,
+      data: 'token123',
+      message: ''
+    }
     if (res.code === 200) {
       // 演示占位：直接把 data 当 token 字符串。接入真实后端时应校验/解析返回结构
       this.setToken(res.data)
-      try {
-        this.userInfo = await this.getUserInfo(true)
-      } catch (e) {
-        this.userInfo = undefined
-        this.setToken('')
-        return Promise.reject(e)
-      }
-      // 登录成功即通知监听者：不依赖 userInfo 真值，避免后端返回 200 但 data 为空时登录态不同步
+      // 登录只负责确立会话；用户信息由使用者按需调用 getUserInfo()/refreshUserInfo() 拉取，二者解耦
       this.listeners.forEach((item) => {
         try {
           item.onLogin?.()
@@ -154,25 +155,46 @@ export class UserManager {
   }
 
   /**
-   * 用户信息
-   * @param refresh 是否请求接口刷新数据
-   * @returns 不存在则返回undefined
+   * 获取用户信息：优先返回内存缓存，未缓存时调用接口拉取一次（懒加载）。
+   * 由使用者按需调用，登录流程不再预取。
+   * @returns 未登录返回 undefined
    */
-  async getUserInfo(refresh: boolean = false): Promise<UserInfo | undefined> {
+  async getUserInfo(): Promise<UserInfo | undefined> {
     if (!this.getToken()) {
       this.userInfo = undefined
       return undefined
     }
-    if (this.userInfo && !refresh) {
+    if (this.userInfo) {
       return this.userInfo
     }
-    let res = await NetManager.getInstance().request<UserInfo>({
+    return this.fetchUserInfo()
+  }
+
+  /**
+   * 强制从接口刷新用户信息并更新缓存。
+   * @returns 未登录返回 undefined
+   */
+  async refreshUserInfo(): Promise<UserInfo | undefined> {
+    if (!this.getToken()) {
+      this.userInfo = undefined
+      return undefined
+    }
+    return this.fetchUserInfo()
+  }
+
+  /**
+   * 请求用户信息并写入内存缓存，供 getUserInfo / refreshUserInfo 复用。
+   * @returns 接口返回的用户信息
+   */
+  private async fetchUserInfo(): Promise<UserInfo | undefined> {
+    const res = await NetManager.getInstance().request<UserInfo>({
       method: 'post',
       url: 'getUserInfo',
     })
     if (res.code === 200) {
       // 演示占位：直接整体赋值后端返回。接入真实后端时应按字段解析/校验
       this.userInfo = res.data
+      this.notifyUserInfoChanged()
       return this.userInfo
     } else {
       return Promise.reject(new Error(`getUserInfo failed: code=${res.code}`))
@@ -180,25 +202,27 @@ export class UserManager {
   }
 
   /**
+   * 通知监听者用户信息已变化（拉取/刷新得到新值，或退出登录被清空）
+   */
+  private notifyUserInfoChanged(): void {
+    this.listeners.forEach((item) => {
+      try {
+        item.onUserInfoChanged?.(this.userInfo)
+      } catch (e) {
+        hilog.error(DOMAIN, TAG, `onUserInfoChanged listener ：${e?.message}`);
+      }
+    })
+  }
+
+  /**
    * 退出登录
    * @returns
    */
   async logout(): Promise<void> {
-    try {
-      const res = await NetManager.getInstance().request({
-        method: 'post',
-        url: 'logout',
-      })
-      if (res.code !== 200) {
-        hilog.warn(DOMAIN, TAG, `logout 服务端返回非 200：code=${res.code}`);
-      }
-    } catch (e) {
-      // 网络异常时仍清理本地状态，避免用户无法退出
-      hilog.warn(DOMAIN, TAG, `logout 网络异常，清理本地状态：${e?.message}`);
-    }
     // 无论服务端是否成功，都清理本地登录态
     this.userInfo = undefined
     this.setToken('')
+    this.notifyUserInfoChanged()
     this.listeners.forEach((item) => {
       try {
         item.onLogout?.()

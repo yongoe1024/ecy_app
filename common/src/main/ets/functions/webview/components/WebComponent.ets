@@ -1,19 +1,19 @@
-import { webview } from "@kit.ArkWeb"
-import { hilog } from "@kit.PerformanceAnalysisKit";
+import { webview } from '@kit.ArkWeb';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
 /** Demo
-WebComponent({
-  src: this.src,
-  loadProgress: this.loadProgress!!,
-  title: this.title!!
-})
+ * WebComponent({
+ * src: this.src,
+ * loadProgress: this.loadProgress!!,
+ * title: this.title!!
+ * })
  */
 const DOMAIN: number = 0x0000;
 const TAG: string = 'WebComponent';
 
 @ComponentV2
 export struct WebComponent {
-  @Require @Once @Param src: string
+  @Require @Param src: string
   @Param controller: webview.WebviewController = new webview.WebviewController()
   @Param title: string = ''
   @Event $title: Callback<string>

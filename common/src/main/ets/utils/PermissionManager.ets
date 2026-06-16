@@ -1,7 +1,7 @@
-import { abilityAccessCtrl, bundleManager, Permissions } from '@kit.AbilityKit'
-import { AppStorageV2 } from '@kit.ArkUI'
-import { GlobalState } from '../functions'
-import { hilog } from '@kit.PerformanceAnalysisKit'
+import { abilityAccessCtrl, bundleManager, Permissions } from '@kit.AbilityKit';
+import { AppStorageV2 } from '@kit.ArkUI';
+import { GlobalState } from '../functions';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'PermissionManager';
@@ -22,7 +22,7 @@ export class PermissionManager {
    * @param permissions 权限
    * @param failStr 跳转提示信息
    * @returns 成功失败
-   * @throws
+   * @throws BusinessError
    */
   public static async requestPermissions(permissions: Permissions[], failStr: string): Promise<boolean> {
     const not: Permissions[] = PermissionManager.check(permissions)
@@ -36,6 +36,9 @@ export class PermissionManager {
     // 仅在「不再询问」的永久拒绝时引导去设置页；首次拒绝保留下次系统弹窗的机会
     if (res.permanentlyDenied) {
       PermissionManager.showDialog(failStr)
+        .catch((error: BusinessError) => {
+          hilog.error(DOMAIN, TAG, `引导去设置页弹出失败 ${error.code} ${error.message}`);
+        })
     }
     return false
   }
@@ -45,6 +48,7 @@ export class PermissionManager {
    * 检查是否有权限
    * @param permissions 申请权限
    * @returns 没有的权限
+   * @throws BusinessError
    */
   private static check(permissions: Permissions[]): Permissions[] {
     const manager = abilityAccessCtrl.createAtManager()
@@ -76,10 +80,8 @@ export class PermissionManager {
   private static async request(permissions: Permissions[]): Promise<PermissionRequestResult> {
     const state = AppStorageV2.connect(GlobalState)!
     const context = state.uiAbilityContext
-    // 显式使用 UIAbilityContext，避免 getContext() 隐式取到非预期上下文
     if (!context) {
-      hilog.error(DOMAIN, TAG, 'request 失败：uiAbilityContext 未初始化');
-      return { granted: false, permanentlyDenied: false }
+      throw new Error('PermissionManager: uiAbilityContext 未初始化，请在 Ability 创建后调用');
     }
     const manager = abilityAccessCtrl.createAtManager()
     const result = await manager.requestPermissionsFromUser(context, permissions)
@@ -107,8 +109,7 @@ export class PermissionManager {
     const state = AppStorageV2.connect(GlobalState)!;
     // windowStage 尚未就绪时无法弹窗，显式记录而非静默失败
     if (!state.windowStage) {
-      hilog.error(DOMAIN, TAG, 'showDialog 失败：windowStage 未初始化');
-      return
+      throw new Error('PermissionManager: windowStage 未初始化，请在 Ability 创建后调用');
     }
     // 使用鸿蒙的对话框组件
     const result = await state.windowStage.getMainWindowSync()
@@ -131,15 +132,13 @@ export class PermissionManager {
     if (result?.index === 1) {
       const appInfo =
         bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION)
-      state.uiAbilityContext?.startAbility({
+      return state.uiAbilityContext?.startAbility({
         bundleName: "com.huawei.hmos.settings",
         abilityName: "com.huawei.hmos.settings.MainAbility",
         uri: "application_info_entry", //参数名
         parameters: {
           pushParams: appInfo.name
         }
-      }).catch((e: BusinessError) => {
-        hilog.error(DOMAIN, TAG, `startAbility settings ：${e.code} ${e.message}`);
       })
     }
   }

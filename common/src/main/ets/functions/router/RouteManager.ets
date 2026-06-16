@@ -9,6 +9,17 @@ import { hilog } from "@kit.PerformanceAnalysisKit";
 const DOMAIN: number = 0x0000;
 const TAG: string = 'RouteManager';
 
+interface LoginPopResult {
+  loginSuccess?: boolean
+  targetPage?: string
+  targetParams?: Record<string, ESObject>
+}
+
+interface LoginRouteParams {
+  targetPage: string
+  targetParams?: Record<string, ESObject>
+}
+
 /**
  * 路由管理类
  */
@@ -94,10 +105,24 @@ export class RouteManager {
    * 跳转，支持http目标
    */
   public push(options: RouterParams): void {
-    // 需要登录：未登录时跳登录页，并把原 onPop 透传给登录页，避免调用方回调被静默丢弃
+    // 需要登录：未登录时先跳登录页，登录成功后再导向原目标页面
     if (options?.needLogin && !UserManager.getInstance().getToken()) {
-      this.pageStack?.pushDestinationByName(RouteTable.MINE_LOGIN, undefined, (popInfo: PopInfo) => {
-        options?.onPop?.(popInfo)
+      let loginParams: LoginRouteParams = {
+        targetPage: options.url
+      }
+      if (options.params) {
+        loginParams.targetParams = options.params
+      }
+      this.pageStack?.pushDestinationByName(RouteTable.MINE_LOGIN, loginParams, (popInfo: PopInfo) => {
+        const result = popInfo.result as LoginPopResult
+        if (result?.loginSuccess && result.targetPage) {
+          this.push({
+            url: result.targetPage,
+            params: result.targetParams,
+            animated: options.animated,
+            onPop: options.onPop
+          })
+        }
       }, true)
         .catch((e: BusinessError) => {
           hilog.error(DOMAIN, TAG, `push login ：${e.code} ${e.message}`);
@@ -115,31 +140,36 @@ export class RouteManager {
         IBestToast.show('WEB页面跳转失败')
       })
     } else {
-      // 解析问号传参
-      const uriInstance = new uri.URI(options.url);
-      const paramNames = uriInstance.getQueryNames();
-      // 浅拷贝，避免改写调用方传入的 params 对象（ArkTS 不支持对象展开）
-      let params: Record<string, ESObject> = {}
-      const sourceParams = options.params
-      if (sourceParams) {
-        Object.keys(sourceParams).forEach((key: string) => {
-          params[key] = sourceParams[key]
+      try {
+        // 解析问号传参
+        const uriInstance = new uri.URI(options.url);
+        const paramNames = uriInstance.getQueryNames();
+        // 浅拷贝，避免改写调用方传入的 params 对象（ArkTS 不支持对象展开）
+        let params: Record<string, ESObject> = {}
+        const sourceParams = options.params
+        if (sourceParams) {
+          Object.keys(sourceParams).forEach((key: string) => {
+            params[key] = sourceParams[key]
+          })
+        }
+        paramNames.forEach(item => {
+          let value = uriInstance.getQueryValue(item)
+          params[item] = value
         })
-      }
-      paramNames.forEach(item => {
-        let value = uriInstance.getQueryValue(item)
-        params[item] = value
-      })
-      // 开始跳转，传入 真实路由参数
-      this.pageStack?.pushDestinationByName(
-        options.url.split('?')[0],
-        params,
-        options.onPop,
-        options?.animated
-      ).catch((e: BusinessError) => {
-        hilog.error(DOMAIN, TAG, `push ：${e.code} ${e.message}`);
+        // 开始跳转，传入 真实路由参数
+        this.pageStack?.pushDestinationByName(
+          options.url.split('?')[0],
+          params,
+          options.onPop,
+          options?.animated
+        ).catch((e: BusinessError) => {
+          hilog.error(DOMAIN, TAG, `push ：${e.code} ${e.message}`);
+          IBestToast.show('目标页面不存在')
+        })
+      } catch (e) {
+        hilog.error(DOMAIN, TAG, `push parse url ：${e?.message}`);
         IBestToast.show('目标页面不存在')
-      })
+      }
     }
   }
 }

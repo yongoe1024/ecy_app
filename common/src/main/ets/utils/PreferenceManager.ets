@@ -23,29 +23,29 @@ export class PreferenceManager {
     try {
       PreferenceManager.prefs = preferences.getPreferencesSync(state.uiAbilityContext, { name: PREFERENCES_NAME });
     } catch (error) {
-      throw new Error('PreferenceManager: getPreferencesSync 失败' + error.message);
+      throw new Error(`getPreferencesSync:失败：${error.code} ${error.message}`);
     }
     return PreferenceManager.prefs;
   }
 
-  /** @throws */
+  /** @throws BusinessError*/
   static getSync(key: string, defaultValue?: preferences.ValueType): preferences.ValueType {
     return PreferenceManager.getPrefs().getSync(key, defaultValue);
   }
 
-  /** @throws */
+  /** @throws BusinessError*/
   static putSync(key: string, value: preferences.ValueType): void {
     const pre = PreferenceManager.getPrefs();
     pre.putSync(key, value);
     pre.flushSync();
   }
 
-  /** @throws */
+  /** @throws BusinessError*/
   static hasSync(key: string): boolean {
     return PreferenceManager.getPrefs().hasSync(key);
   }
 
-  /** @throws */
+  /** @throws BusinessError */
   static deleteSync(key: string): void {
     const pre = PreferenceManager.getPrefs();
     pre.deleteSync(key);

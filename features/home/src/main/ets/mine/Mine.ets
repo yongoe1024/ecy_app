@@ -1,14 +1,82 @@
 import { AppStorageV2 } from '@kit.ArkUI'
-import { GlobalState, RouteManager, RouteTable } from 'common'
+import { GlobalState, RouteManager, RouteTable, UserCallback, UserManager } from 'common'
+import { IBestToast } from '@ibestservices/ibest-ui-v2'
+import { hilog } from '@kit.PerformanceAnalysisKit'
+
+const DOMAIN: number = 0x0000;
+const TAG: string = 'Mine';
 
 @ComponentV2
 export struct Mine {
   @Local globalState: GlobalState = AppStorageV2.connect(GlobalState)!
   @Local userName: string = '访客用户'
   @Local loginTip: string = '登录后可同步订单、地址与会员权益'
+  @Local isLoggedIn: boolean = false
+  private userListener?: UserCallback
+
+  aboutToAppear(): void {
+    this.registerUserListener()
+    void this.loadUserState(false)
+  }
+
+  aboutToDisappear(): void {
+    if (this.userListener) {
+      UserManager.getInstance().unRegisterListener(this.userListener)
+    }
+  }
+
+  private registerUserListener(): void {
+    if (!this.userListener) {
+      this.userListener = {
+        onLogin: () => {
+          void this.loadUserState(true)
+        },
+        onLogout: () => {
+          this.resetGuestState()
+        }
+      }
+    }
+    UserManager.getInstance().registerListener(this.userListener)
+  }
+
+  private resetGuestState(): void {
+    this.isLoggedIn = false
+    this.userName = '访客用户'
+    this.loginTip = '登录后可同步订单、地址与会员权益'
+  }
+
+  private async loadUserState(readCachedInfo: boolean): Promise<void> {
+    const token = UserManager.getInstance().getToken()
+    if (!token) {
+      this.resetGuestState()
+      return
+    }
+    this.isLoggedIn = true
+    this.userName = '已登录用户'
+    this.loginTip = `Token 已保存：${token.substring(0, 8)}...`
+    if (!readCachedInfo) {
+      return
+    }
+    try {
+      const userInfo = await UserManager.getInstance().getUserInfo()
+      this.userName = userInfo?.name || userInfo?.phone || '已登录用户'
+    } catch (e) {
+      hilog.warn(DOMAIN, TAG, `loadUserState ：${e?.message}`);
+    }
+  }
 
   goLogin(): void {
     RouteManager.getInstance().push({ url: RouteTable.MINE_LOGIN })
+  }
+
+  async logout(): Promise<void> {
+    try {
+      await UserManager.getInstance().logout()
+      IBestToast.show('已退出登录')
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `logout ：${e?.message}`);
+      IBestToast.show('退出登录失败')
+    }
   }
 
   @Builder
@@ -130,8 +198,12 @@ export struct Mine {
               .width('100%')
 
               Row({ space: 10 }) {
-                this.actionButton('请登录', () => {
-                  this.goLogin()
+                this.actionButton(this.isLoggedIn ? '退出登录' : '请登录', () => {
+                  if (this.isLoggedIn) {
+                    this.logout()
+                  } else {
+                    this.goLogin()
+                  }
                 })
               }
               .width('100%')
