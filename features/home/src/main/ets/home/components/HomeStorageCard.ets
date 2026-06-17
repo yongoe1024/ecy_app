@@ -21,7 +21,7 @@ export struct HomeStorageCard {
   loadStoredValues(): void {
     try {
       this.tokenValue = UserManager.getInstance().getToken() || '尚未写入'
-      this.noteValue = PreferenceManager.getStringSync(DEMO_NOTE_KEY, '点击写入一条演示数据')
+      this.noteValue = PreferenceManager.getSync(DEMO_NOTE_KEY, '点击写入一条演示数据') as string
     } catch (e) {
       hilog.error(DOMAIN, TAG, `loadStoredValues ：${e.code} ${e.message}`);
       this.noteValue = '读取失败'
@@ -31,7 +31,7 @@ export struct HomeStorageCard {
   saveNote(): void {
     try {
       PreferenceManager.putSync(DEMO_NOTE_KEY, this.noteDraft)
-      this.noteValue = PreferenceManager.getStringSync(DEMO_NOTE_KEY, '')
+      this.noteValue = PreferenceManager.getSync(DEMO_NOTE_KEY, '') as string
       IBestToast.show('已写入首选项')
     } catch (e) {
       hilog.error(DOMAIN, TAG, `saveNote ：${e.code} ${e.message}`);

@@ -94,7 +94,7 @@ export class UserManager {
     }
     try {
       // 重启app拿历史记录
-      let token = PreferenceManager.getStringSync('token', '')
+      let token = PreferenceManager.getSync('token', '') as string
       if (token) {
         this.token = token
         return token

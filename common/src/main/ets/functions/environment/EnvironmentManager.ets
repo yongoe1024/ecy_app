@@ -7,12 +7,13 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 const DOMAIN: number = 0x0000;
 const TAG: string = 'EnvironmentManager';
 
-// deveco虚拟机网关
+// 环境 baseURL 配置。约定：
+// - DEV 指向 DevEco 模拟器宿主回环（10.0.2.2），明文 http 仅用于本地联调；
+// - 生产 / 测试为占位地址，上线前必须替换为真实 HTTPS 域名；
+// - 真机 / 发布版下明文 HTTP 可能被系统网络策略限制，如确需明文请按目标环境放开，生产一律用 HTTPS。
 const DEV_BASE_URL = 'http://10.0.2.2:8080'
-// TODO: 替换为真实生产环境地址
-const PRD_BASE_URL = 'https://myprod.com'
-// TODO: 替换为真实测试环境地址
-const TEST_BASE_URL = 'https://mytest.com'
+const PRD_BASE_URL = 'https://myprod.com'   // TODO: 替换为真实生产域名（HTTPS）
+const TEST_BASE_URL = 'https://mytest.com'  // TODO: 替换为真实测试域名（HTTPS）
 
 /**
  * app环境管理器
@@ -37,7 +38,7 @@ export class EnvironmentManager {
       return this.env
     }
     try {
-      const stored = PreferenceManager.getStringSync('env', EnvEnum.DEV)
+      const stored = PreferenceManager.getSync('env', EnvEnum.DEV) as string
       this.env = EnvironmentManager.toEnvEnum(stored)
     } catch (e) {
       hilog.error(DOMAIN, TAG, `getEnv ：${e.code} ${e.message}`);

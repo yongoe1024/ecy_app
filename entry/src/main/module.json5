@@ -32,6 +32,10 @@
               "ohos.want.action.home"
             ]
           }
+          // 当前仅注册桌面入口：ecy:// 深链只来自内部 want.parameters.toUrl（见 EntryAbility.handleDeepLink）。
+          // 如需支持外部应用 / 浏览器通过 ecy:// 唤起，新增一条 skill：
+          // { "actions": ["ohos.want.action.viewData"], "uris": [{ "scheme": "ecy" }] }
+          // 注意：开放后 EntryAbility 可被任意来源唤起，务必结合 RouteManager.pushDeepLink 的 scheme 校验与隐私门一起使用。
         ]
       }
     ],

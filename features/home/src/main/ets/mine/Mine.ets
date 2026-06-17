@@ -88,19 +88,6 @@ export struct Mine {
   }
 
   @Builder
-  actionButton(text: string, onClick: () => void) {
-    Button(text)
-      .width('100%')
-      .height(44)
-      .borderRadius(14)
-      .backgroundColor('#1D4ED8')
-      .fontColor('#FFFFFF')
-      .fontSize(15)
-      .fontWeight(FontWeight.Medium)
-      .onClick(onClick)
-  }
-
-  @Builder
   statItem(value: string, label: string) {
     Column({ space: 6 }) {
       Text(value)
@@ -206,13 +193,23 @@ export struct Mine {
               .width('100%')
 
               Row({ space: 10 }) {
-                this.actionButton(this.isLoggedIn ? '退出登录' : '请登录', () => {
-                  if (this.isLoggedIn) {
-                    this.logout()
-                  } else {
-                    this.goLogin()
-                  }
-                })
+                // 直接在 build 中读取 this.isLoggedIn 渲染文案，保证登录态变化后按钮即时更新
+                // （@ComponentV2 下 @Builder 按值传入的字符串参数不会随状态变化重渲染）
+                Button(this.isLoggedIn ? '退出登录' : '请登录')
+                  .width('100%')
+                  .height(44)
+                  .borderRadius(14)
+                  .backgroundColor('#1D4ED8')
+                  .fontColor('#FFFFFF')
+                  .fontSize(15)
+                  .fontWeight(FontWeight.Medium)
+                  .onClick(() => {
+                    if (this.isLoggedIn) {
+                      this.logout()
+                    } else {
+                      this.goLogin()
+                    }
+                  })
               }
               .width('100%')
             }

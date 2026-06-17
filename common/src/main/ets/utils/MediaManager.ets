@@ -28,7 +28,6 @@ export interface MediaConfig {
   playMode: PlayMode
   // 支持http链接、rawfile的文件名
   mediaList?: string[]
-  onChange?: Callback<MediaState>
   surfaceID?: string
   audioRendererInfo?: audio.AudioRendererInfo
 }
@@ -68,10 +67,11 @@ export class MediaManager {
   }
 
   /**
-   * 创建实例
+   * 创建实例并注册播放器回调。
+   * @param config 初始配置
    * @throws BusinessError
    */
-  static async create(context: Context, config: MediaConfig): Promise<MediaManager> {
+  static async create(context: Context, config: MediaConfig, onChange?: Callback<MediaState>): Promise<MediaManager> {
     const avPlayer = await media.createAVPlayer()
     const ins: MediaManager = new MediaManager(avPlayer, context, {
       index: -1,
@@ -84,7 +84,7 @@ export class MediaManager {
       audioRendererInfo: config.audioRendererInfo
     })
     // 先赋值 onChange，再注册事件回调，避免 initCallback 内同步触发的事件丢失
-    ins.onChange = config.onChange
+    ins.onChange = onChange
     ins.initCallback()
     return ins
   }
@@ -105,8 +105,11 @@ export class MediaManager {
   }
 
   /**
-   * 设置并准备播放（加载资源，可得到时长）
-   * @throws BusinessError
+   * 设置资源并准备播放（加载资源后可得到时长）；准备完成即 resolve，可继续调用 play()。
+   * @param index 要播放的媒体在 mediaList 中的索引
+   * @param config 可选，用于本次准备时整体覆盖播放配置（如中途切换播放列表 / 播放模式）。
+   *               注意：按整体覆盖——未在 config 中指定的 surfaceID / audioRendererInfo 会被清空；
+   * @throws 失败时 reject：被新的 setAndPrepare 调用取消 → AppError(1301)；其余（reset/prepare/资源加载）→ 底层 BusinessError
    */
   async setAndPrepare(index: number, config?: MediaConfig): Promise<void> {
     // 取消上一个仍在等待的 prepare，避免其 Promise 因 resolve/reject 被覆盖而永久挂起
@@ -177,7 +180,8 @@ export class MediaManager {
   }
 
   /**
-   * 播放
+   * 播放。需先 `setAndPrepare` 进入已准备状态后调用；
+   * 若 create 之后未准备就调用、或 `clear()` 释放之后再调用，底层 AVPlayer 会 reject。
    * @throws BusinessError
    */
   async play(): Promise<void> {

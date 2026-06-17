@@ -23,15 +23,14 @@ export struct HomeMediaCard {
       const manager = await MediaManager.create(context, {
         mediaList: [DEMO_AUDIO],
         playMode: PlayMode.SINGLE,
-        onChange: (state: MediaState) => {
-          if (this.destroyed) {
-            return
-          }
-          this.mediaReady = true
-          this.mediaSummary =
-            `索引 ${state.index} | ${TimeHelper.formatClock(state.time)} / ${TimeHelper.formatClock(state.duration)} | ${state.isPlay ?
-              '播放中' : '暂停'}`
+      }, (state: MediaState) => {
+        if (this.destroyed) {
+          return
         }
+        this.mediaReady = true
+        this.mediaSummary =
+          `索引 ${state.index} | ${TimeHelper.formatClock(state.time)} / ${TimeHelper.formatClock(state.duration)} | ${state.isPlay ?
+            '播放中' : '暂停'}`
       })
       // 创建期间组件可能已销毁：立即释放，避免 avPlayer 泄漏
       if (this.destroyed) {

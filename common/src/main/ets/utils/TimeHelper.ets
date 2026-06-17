@@ -92,14 +92,18 @@ export class TimeHelper {
         }
         this.tick();
       } else {
-        this.timeMs = this.baseTimeMs - elapsed;
-        if (this.timeMs <= 0) {
+        const remaining = this.baseTimeMs - elapsed;
+        if (remaining <= 0) {
           this.timeMs = 0;
           this.tick();
           this.stop();
           this.onReachLimit?.();
           return;
         }
+        // 向上取整到 triggerTime 的整数倍：让相邻 tick 的剩余值正好相差一个 triggerTime，
+        // 避免首个 tick 因 setInterval 轻微滞后（如 1016ms）使 remaining=28984、被 formatClock 的 floor 显示成 28 而跳过 29。
+        // 每次都按真实 elapsed 重算，不累积漂移。
+        this.timeMs = Math.ceil(remaining / this.triggerTime) * this.triggerTime;
         this.tick();
       }
     }, this.triggerTime) as number;

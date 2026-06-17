@@ -3,6 +3,7 @@ import { AppStorageV2 } from '@kit.ArkUI';
 import { GlobalState } from '../functions';
 import { AppError } from '../functions/AppError';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { BusinessError } from '@kit.BasicServicesKit'
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'PermissionManager';
@@ -22,8 +23,8 @@ export class PermissionManager {
    * 获取权限，永久拒绝时弹窗引导跳转设置页
    * @param permissions 权限
    * @param failStr 跳转提示信息
-   * @returns 成功失败
-   * @throws BusinessError
+   * @returns 是否已授权
+   * @throws context 未初始化时抛 AppError；权限查询底层异常透传 BusinessError
    */
   public static async requestPermissions(permissions: Permissions[], failStr: string): Promise<boolean> {
     const not: Permissions[] = PermissionManager.check(permissions)
