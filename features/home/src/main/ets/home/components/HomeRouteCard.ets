@@ -12,11 +12,18 @@ export struct HomeRouteCard {
     })
   }
 
-  openFullWebDemo2(): void {
+  openFullWebDemo1(): void {
     RouteManager.getInstance().push({
       url: DEMO_WEB,
       animated: true,
       needLogin: true
+    })
+  }
+
+  openFullWebDemo2(): void {
+    RouteManager.getInstance().push({
+      url: 'asvdd',
+      animated: true,
     })
   }
 
@@ -34,6 +41,9 @@ export struct HomeRouteCard {
       .onClick(() => this.openFullWebDemo())
       .backgroundColor('#7C3AED')
     Button('需要登录，路由到 Web 页面')
+      .onClick(() => this.openFullWebDemo1())
+      .backgroundColor('#7C3AED')
+    Button(' 路由到不存在web')
       .onClick(() => this.openFullWebDemo2())
       .backgroundColor('#7C3AED')
   }

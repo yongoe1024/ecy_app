@@ -27,7 +27,7 @@
 |------|--------|---------|
 | 网络请求 | `NetManager` | `request` · `upload` · `download` |
 | 用户与登录 | `UserManager` | `login` · `logout` · `getToken` · `getUserInfo` |
-| 本地存储 | `PreferenceManager` | `getStringSync` · `putSync` · `deleteSync` |
+| 本地存储 | `PreferenceManager` | `getSync` · `putSync` · `deleteSync` |
 | 环境切换 | `EnvironmentManager` | `getEnv` · `getBaseUrl` · `setEnv` |
 | 路由导航 | `RouteManager` | `push` · `pop` · `popTo` |
 | WebView | `WebComponent` | 组件，必填 `src` |
@@ -222,7 +222,7 @@ Column().width(Breakpoint.ofWidth(
 
 | 层 | 代表方法 | 失败时 | 你该怎么做 |
 |----|---------|--------|-----------|
-| 读查询（同步） | `getToken` · `getStringSync` · `getEnv` | 记日志，返回安全默认值（`''`/`false`/`DEV`） | 直接用返回值 |
+| 读查询（同步） | `getToken` · `getEnv` | 记日志，返回安全默认值（`''`/`false`/`DEV`） | 直接用返回值 |
 | 写变更（同步） | `putSync` · `deleteSync` · `setToken` · `setEnv` | **抛异常** | `try / catch` |
 | 网络 | `request` · `upload` · `download` | 有响应即 resolve（即使 `code !== 200`）；仅网络/超时 reject | 先查 `res.code`，再 `catch` |
 | 领域异步 | `login` · `LocationManager.*` · `MediaManager.*` | `reject(AppError)` | `try/catch` 或 `.catch` |

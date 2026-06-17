@@ -1,5 +1,5 @@
 import { webview } from '@kit.ArkWeb'
-import { IBestIcon, IBestNavBar } from '@ibestservices/ibest-ui-v2'
+import { IBestIcon, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui-v2'
 import { WebComponent } from '../components/WebComponent'
 import { hilog } from '@kit.PerformanceAnalysisKit'
 import { RouteManager } from '../..';
@@ -85,6 +85,7 @@ export struct WebViewPage {
         this.src = src
       } else {
         hilog.error(DOMAIN, TAG, `onReady 缺少有效 src：${src}`);
+        IBestToast.show('无效的网页地址')
         RouteManager.getInstance().pop()
       }
     })

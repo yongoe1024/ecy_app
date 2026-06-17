@@ -3,6 +3,7 @@ import { EnvEnum, GlobalState } from './GlobalModel';
 import { AppStorageV2 } from '@kit.ArkUI';
 import { Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { AppError } from '../AppError';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'EnvironmentManager';
@@ -63,8 +64,8 @@ export class EnvironmentManager {
 
   /**
    * 切换环境并重启应用使其生效。
-   * 约定：写变更不静默吞错——持久化失败时抛出，调用方需感知（环境未切换）。
-   * @throws Error 持久化失败
+   * 约定：写变更不静默吞错——失败时抛出，调用方需感知。
+   * @throws AppError 持久化失败（环境未切换）；或环境已落盘但自动重启失败（code 1401，需手动重启生效）
    */
   setEnv(e: EnvEnum): void {
     const currentEnv = this.getEnv()
@@ -73,26 +74,29 @@ export class EnvironmentManager {
     }
     PreferenceManager.putSync('env', e)
     this.env = e
-    // 设置环境后重启应用
+    // 设置环境后重启应用（已落盘，重启失败也会向上抛出，由调用方提示手动重启）
     this.restartApp()
   }
 
   /**
-   * 重启应用
+   * 重启应用。
+   * @throws AppError 1401 applicationContext 缺失或 restartApp 失败时抛出（此时环境已切换，需手动重启）
    */
   private restartApp(): void {
-    let applicationContext = this.globalState.uiAbilityContext?.getApplicationContext();
-    if (applicationContext) {
-      // 包名
-      let want: Want = {
-        bundleName: this.globalState.uiAbilityContext?.abilityInfo.bundleName,
-        abilityName: this.globalState.uiAbilityContext?.abilityInfo.name
-      };
-      try {
-        applicationContext.restartApp(want);
-      } catch (e) {
-        hilog.error(DOMAIN, TAG, `restartApp ：${e.code} ${e.message}`);
-      }
+    const applicationContext = this.globalState.uiAbilityContext?.getApplicationContext();
+    if (!applicationContext) {
+      throw new AppError(1401, '自动重启失败，请手动重启应用以使环境切换生效')
+    }
+    // 包名
+    const want: Want = {
+      bundleName: this.globalState.uiAbilityContext?.abilityInfo.bundleName,
+      abilityName: this.globalState.uiAbilityContext?.abilityInfo.name
+    };
+    try {
+      applicationContext.restartApp(want);
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `restartApp ：${e.code} ${e.message}`);
+      throw new AppError(1401, '自动重启失败，请手动重启应用以使环境切换生效')
     }
   }
 

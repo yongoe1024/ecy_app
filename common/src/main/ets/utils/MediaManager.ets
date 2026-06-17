@@ -294,6 +294,9 @@ export class MediaManager {
           break;
         case 'released':
           // 销毁状态，需要重新create
+          // 若释放时仍有挂起的 setAndPrepare（如 prepare 期间调用了 clear），结算它避免调用方永久挂起；
+          // 无挂起时 reject 为 undefined，settle 自然为 no-op
+          this.settle(new AppError(1302, '播放器已释放，setAndPrepare 已取消'))
           this.state.index = -1
           this.state.duration = 0
           this.state.time = 0

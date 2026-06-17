@@ -30,8 +30,9 @@ export class PreferenceManager {
   }
 
   /**
-   * 读取原始值（联合类型 ValueType）。多数场景建议改用类型化的
-   * getStringSync / getBooleanSync / getNumberSync，避免在调用处强转。
+   * 读取原始值：返回底层存储的联合类型 ValueType，调用方按需强转（如 `... as string`）。
+   * 与 putSync / deleteSync 同属底层接口：存储异常会抛出（并非「读查询」层的安全默认值语义）。
+   * 若需「读失败返回安全默认值」的封装，参考 UserManager.getToken / EnvironmentManager.getEnv 的用法。
    * @throws Error
    */
   static getSync(key: string, defaultValue?: preferences.ValueType): preferences.ValueType {
