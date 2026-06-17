@@ -119,7 +119,7 @@ export class UserManager {
 
   /**
    * 登录：确立会话。
-   * 约定：失败时 Promise.reject(AppError)——业务码非 200，或 setToken 持久化失败。
+   * 约定：失败时 reject——业务码非 200 → AppError；setToken 持久化失败 → 透传底层错误。
    * @param phone 手机号
    * @param code 验证码
    */

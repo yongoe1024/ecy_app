@@ -1,6 +1,7 @@
 import { preferences } from '@kit.ArkData';
 import { AppStorageV2 } from '@kit.ArkUI';
 import { GlobalState } from '../functions';
+import { AppError } from '../functions/AppError';
 
 const PREFERENCES_NAME: string = 'ECY_APP';
 
@@ -18,12 +19,12 @@ export class PreferenceManager {
     const state = AppStorageV2.connect(GlobalState)!;
     // uiAbilityContext 尚未就绪时给出明确错误，避免底层抛出难以定位的异常
     if (!state.uiAbilityContext) {
-      throw new Error('PreferenceManager: uiAbilityContext 未初始化，请在 Ability 创建后调用');
+      throw new AppError(1101, 'PreferenceManager: uiAbilityContext 未初始化，请在 Ability 创建后调用');
     }
     try {
       PreferenceManager.prefs = preferences.getPreferencesSync(state.uiAbilityContext, { name: PREFERENCES_NAME });
     } catch (error) {
-      throw new Error(`getPreferencesSync:失败：${error.code} ${error.message}`);
+      throw new AppError(1102, `getPreferencesSync 失败：${error.code} ${error.message}`);
     }
     return PreferenceManager.prefs;
   }
@@ -35,33 +36,6 @@ export class PreferenceManager {
    */
   static getSync(key: string, defaultValue?: preferences.ValueType): preferences.ValueType {
     return PreferenceManager.getPrefs().getSync(key, defaultValue);
-  }
-
-  /**
-   * 读取字符串：key 不存在或存储的不是字符串时返回 defaultValue。
-   * @throws Error
-   */
-  static getStringSync(key: string, defaultValue: string = ''): string {
-    const value = PreferenceManager.getPrefs().getSync(key, defaultValue);
-    return typeof value === 'string' ? value : defaultValue;
-  }
-
-  /**
-   * 读取布尔：key 不存在或存储的不是布尔时返回 defaultValue。
-   * @throws Error
-   */
-  static getBooleanSync(key: string, defaultValue: boolean = false): boolean {
-    const value = PreferenceManager.getPrefs().getSync(key, defaultValue);
-    return typeof value === 'boolean' ? value : defaultValue;
-  }
-
-  /**
-   * 读取数字：key 不存在或存储的不是数字时返回 defaultValue。
-   * @throws Error
-   */
-  static getNumberSync(key: string, defaultValue: number = 0): number {
-    const value = PreferenceManager.getPrefs().getSync(key, defaultValue);
-    return typeof value === 'number' ? value : defaultValue;
   }
 
   /** @throws Error */

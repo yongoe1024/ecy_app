@@ -1,6 +1,7 @@
 import { abilityAccessCtrl, bundleManager, Permissions } from '@kit.AbilityKit';
 import { AppStorageV2 } from '@kit.ArkUI';
 import { GlobalState } from '../functions';
+import { AppError } from '../functions/AppError';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN: number = 0x0000;
@@ -81,7 +82,7 @@ export class PermissionManager {
     const state = AppStorageV2.connect(GlobalState)!
     const context = state.uiAbilityContext
     if (!context) {
-      throw new Error('PermissionManager: uiAbilityContext 未初始化，请在 Ability 创建后调用');
+      throw new AppError(1201, 'PermissionManager: uiAbilityContext 未初始化，请在 Ability 创建后调用');
     }
     const manager = abilityAccessCtrl.createAtManager()
     const result = await manager.requestPermissionsFromUser(context, permissions)
@@ -109,7 +110,7 @@ export class PermissionManager {
     const state = AppStorageV2.connect(GlobalState)!;
     // windowStage 尚未就绪时无法弹窗，显式记录而非静默失败
     if (!state.windowStage) {
-      throw new Error('PermissionManager: windowStage 未初始化，请在 Ability 创建后调用');
+      throw new AppError(1202, 'PermissionManager: windowStage 未初始化，请在 Ability 创建后调用');
     }
     // 使用鸿蒙的对话框组件
     const result = await state.windowStage.getMainWindowSync()

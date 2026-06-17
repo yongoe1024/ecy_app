@@ -53,7 +53,7 @@ ecy_app
 
 ## 错误处理约定
 
-对外 API 按「层」统一错误处理，按下表处理即可正确消费结果。失败时：领域层异步方法 reject `AppError`（继承 `Error`、带 `code`）；同步工具写失败与底层 SDK（avPlayer、定位、Preferences 等）错误以原生 `Error` / `BusinessError` 透传。均可读 `e.message`（多数含 `e.code`）。
+对外 API 按「层」统一错误处理，按下表处理即可正确消费结果。失败时：脚手架自身抛出 / reject 的错误统一为 `AppError`（继承 `Error`、带 `code`）；底层 SDK（avPlayer、网络、Preferences 读写等）错误以原生 `BusinessError` 透传。两者均可读 `e.code` / `e.message`。
 
 | 层 | 代表方法 | 失败时 | 调用方处理 |
 |----|---------|--------|-----------|

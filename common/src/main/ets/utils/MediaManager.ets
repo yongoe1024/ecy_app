@@ -2,6 +2,7 @@ import { media } from '@kit.MediaKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { audio } from '@kit.AudioKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { AppError } from '../functions/AppError';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'MediaManager';
@@ -109,7 +110,7 @@ export class MediaManager {
    */
   async setAndPrepare(index: number, config?: MediaConfig): Promise<void> {
     // 取消上一个仍在等待的 prepare，避免其 Promise 因 resolve/reject 被覆盖而永久挂起
-    this.settle(new Error('setAndPrepare 被新的调用取消'))
+    this.settle(new AppError(1301, 'setAndPrepare 被新的调用取消'))
     return new Promise<void>((resolve, reject) => {
       this.resolve = resolve
       this.reject = reject
