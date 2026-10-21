@@ -1,6 +1,5 @@
-import { IBestButton, IBestToast } from "@ibestservices/ibest-ui-v2"
-import { GlobalState, PreferenceManager } from "common"
-import { AppStorageV2, router } from "@kit.ArkUI"
+import { GlobalState, PreferenceManager, Toast } from "common"
+import { AppStorageV2 } from "@kit.ArkUI"
 import { common } from "@kit.AbilityKit"
 import { hilog } from "@kit.PerformanceAnalysisKit";
 
@@ -9,10 +8,11 @@ const TAG = 'PrivacyPage'
 
 // TODO: 替换为真实的协议页面或链接（建议接入 WebViewPage / 内置协议页）
 
-@Entry
+// 隐私门组件：由 Index 条件渲染（非 @Entry 页面，不走路由），同意后经 onAgreed 通知切换主界面
 @ComponentV2
-struct PrivacyPage {
+export struct PrivacyPage {
   @Local globalState: GlobalState = AppStorageV2.connect(GlobalState)!
+  @Event onAgreed: () => void = () => {}
 
   build() {
     Stack({ alignContent: Alignment.Top }) {
@@ -141,7 +141,7 @@ struct PrivacyPage {
                   .decoration({ type: TextDecorationType.Underline, color: '#2563EB' })
                   .onClick(() => {
                     // TODO: 接入后跳转《ECY-APP服务协议》真实协议页/链接
-                    IBestToast.show('协议页面待接入')
+                    Toast.show('协议页面待接入')
                   })
 
                 Span(' 与 ')
@@ -155,7 +155,7 @@ struct PrivacyPage {
                   .decoration({ type: TextDecorationType.Underline, color: '#2563EB' })
                   .onClick(() => {
                     // TODO: 接入后跳转《隐私政策》真实协议页/链接
-                    IBestToast.show('协议页面待接入')
+                    Toast.show('协议页面待接入')
                   })
 
                 Span('。')
@@ -188,30 +188,37 @@ struct PrivacyPage {
           .width('100%')
 
           Column({ space: 10 }) {
-            IBestButton({
-              text: '同意并继续',
-              type: 'primary',
-              btnWidth: '100%',
-              onBtnClick: () => {
+            Button('同意并继续')
+              .width('100%')
+              .height(44)
+              .fontSize(16)
+              .fontColor('#FFFFFF')
+              .backgroundColor('#2563EB')
+              .borderRadius(22)
+              .onClick(() => {
                 try {
                   PreferenceManager.putSync('agreePrivacy', true)
-                  router.replace({ url: 'pages/Index' })
+                  // 响应式切换主界面：无页面跳转（router.replace 不跨平台、loadContent 在安卓
+                  // 存在适配不确定性），条件渲染由引擎保证三端一致
+                  this.onAgreed?.()
                 } catch (e) {
                   hilog.error(DOMAIN, TAG, `onBtnClick ：${e.code} ${e.message}`);
-                  IBestToast.show('保存失败，请重试')
+                  Toast.show('保存失败，请重试')
                 }
-              }
-            })
-            IBestButton({
-              btnWidth: '100%',
-              text: '暂不同意',
-              onBtnClick: () => {
+              })
+            Button('暂不同意')
+              .width('100%')
+              .height(44)
+              .fontSize(16)
+              .fontColor('#374151')
+              .backgroundColor('#F3F4F6')
+              .borderRadius(22)
+              .onClick(() => {
                 const context = this.getUIContext().getHostContext() as common.UIAbilityContext
                 context.terminateSelf().catch(() => {
                   hilog.error(DOMAIN, TAG, 'terminateSelf失败');
                 })
-              }
-            })
+              })
           }
           .margin({ top: 4, bottom: 28 })
           .width('100%')

@@ -1,8 +1,9 @@
+import { Toast } from '../../../utils';
 import { webview } from '@kit.ArkWeb'
-import { IBestIcon, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui-v2'
 import { WebComponent } from '../components/WebComponent'
 import { hilog } from '@kit.PerformanceAnalysisKit'
-import { RouteManager } from '../..';
+import { GlobalState, RouteManager } from '../..';
+import { AppStorageV2 } from '@kit.ArkUI';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'WebViewPage';
@@ -20,6 +21,7 @@ export struct WebViewPage {
   @Local src: string = ''
   @Local loadProgress: number = 0
   @Local title: string = ''
+  @Local globalState: GlobalState = AppStorageV2.connect(GlobalState)!
   controller: webview.WebviewController = new webview.WebviewController()
 
   pop() {
@@ -35,46 +37,65 @@ export struct WebViewPage {
     }
   }
 
+  // 原生导航栏（替代三方 IBestNavBar）：状态栏避让 + 返回/关闭 + 标题
   @Builder
-  leftBuilder() {
-    Row({ space: 10 }) {
-      IBestIcon({
-        name: 'arrow-left', iconSize: 20, onIconClick: () => {
+  navBar() {
+    Row() {
+      Text('‹')
+        .fontSize(30)
+        .width(40)
+        .textAlign(TextAlign.Center)
+        .onClick(() => {
           this.pop()
-        }
-      })
-
-      IBestIcon({
-        name: 'cross', iconSize: 20, onIconClick: () => {
+        })
+      Text('✕')
+        .fontSize(18)
+        .width(32)
+        .textAlign(TextAlign.Center)
+        .onClick(() => {
           RouteManager.getInstance().pop()
-        }
-      })
+        })
+      Text(this.title)
+        .fontSize(17)
+        .fontWeight(FontWeight.Medium)
+        .layoutWeight(1)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      // 占位平衡左侧操作区宽度，保证标题视觉居中
+      Text('').width(72)
     }
+    .height(48)
+    .width('100%')
+    .padding({ top: this.globalState.topRectHeight })
   }
 
   build() {
     NavDestination() {
-      IBestNavBar({
-        leftBuilder: (): void => this.leftBuilder(),
-        isShowStatusBar: true,
-        title: this.title,
-        onLeftClick: () => {
-          this.pop()
+      Column() {
+        this.navBar()
+        Stack({ alignContent: Alignment.Top }) {
+          // 对齐官方 WebExample：Web 首次创建即持有效 src（初始空串在安卓
+          // AceWeb 适配层行为未验证），src 就绪后才挂载 Web
+          if (this.src !== '') {
+            WebComponent({
+              src: this.src,
+              loadProgress: this.loadProgress!!,
+              title: this.title!!,
+              controller: this.controller
+            })
+          }
+          Progress({ value: 0, total: 100, type: ProgressType.Linear })
+            .width('100%')
+            .height(2)
+            .value(this.loadProgress)
+            .visibility(this.loadProgress == 100 || this.loadProgress == 0 ? Visibility.Hidden : Visibility.Visible)
         }
-      })
-      Stack({ alignContent: Alignment.Top }) {
-        WebComponent({
-          src: this.src,
-          loadProgress: this.loadProgress!!,
-          title: this.title!!,
-          controller: this.controller
-        })
-        Progress({ value: 0, total: 100, type: ProgressType.Linear })
-          .width('100%')
-          .height(2)
-          .value(this.loadProgress)
-          .visibility(this.loadProgress == 100 || this.loadProgress == 0 ? Visibility.Hidden : Visibility.Visible)
+        .width('100%')
+        .layoutWeight(1)
       }
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#FFFFFF')
     }
     .hideTitleBar(true)
     .onReady((context: NavDestinationContext) => {
@@ -85,7 +106,7 @@ export struct WebViewPage {
         this.src = src
       } else {
         hilog.error(DOMAIN, TAG, `onReady 缺少有效 src：${src}`);
-        IBestToast.show('无效的网页地址')
+        Toast.show('无效的网页地址')
         RouteManager.getInstance().pop()
       }
     })

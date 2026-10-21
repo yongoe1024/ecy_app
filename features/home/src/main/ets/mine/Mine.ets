@@ -1,6 +1,5 @@
 import { AppStorageV2 } from '@kit.ArkUI'
-import { GlobalState, RouteManager, RouteTable, UserCallback, UserManager } from 'common'
-import { IBestToast } from '@ibestservices/ibest-ui-v2'
+import { GlobalState, RouteManager, RouteTable, UserCallback, UserManager, Toast } from 'common'
 import { hilog } from '@kit.PerformanceAnalysisKit'
 
 const DOMAIN: number = 0x0000;
@@ -80,10 +79,10 @@ export struct Mine {
   async logout(): Promise<void> {
     try {
       await UserManager.getInstance().logout()
-      IBestToast.show('已退出登录')
+      Toast.show('已退出登录')
     } catch (e) {
       hilog.error(DOMAIN, TAG, `logout ：${e?.message}`);
-      IBestToast.show('退出登录失败')
+      Toast.show('退出登录失败')
     }
   }
 

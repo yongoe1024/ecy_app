@@ -33,17 +33,16 @@ export class LocationManager {
    */
   async checkAndRequest(): Promise<void> {
     // 请求权限
-    let res = await PermissionManager.requestPermissions(
+    const granted = await PermissionManager.requestPermissions(
       ["ohos.permission.APPROXIMATELY_LOCATION", "ohos.permission.LOCATION"],
       '无法获取定位权限，请前往系统设置中开启')
-    if (!res) {
+    if (!granted) {
       return Promise.reject(new AppError(1001, '定位权限未授予'))
     }
-    let locationEnabled = geoLocationManager.isLocationEnabled();
-    if (!locationEnabled) {
+    if (!geoLocationManager.isLocationEnabled()) {
       // 打开定位设置
-      res = await this.openSet()
-      if (!res) {
+      const enabled = await this.openSet()
+      if (!enabled) {
         return Promise.reject(new AppError(1002, '系统定位开关未开启'))
       }
     }
@@ -83,7 +82,7 @@ export class LocationManager {
   }
 
   /**
-   * 打开定位
+   * 打开定位开关，返回开关的最终状态
    * @throws
    */
   private openSet(): Promise<boolean> {
@@ -91,8 +90,8 @@ export class LocationManager {
     if (!context) {
       return Promise.reject(new AppError(1007, 'uiAbilityContext 未初始化，无法打开定位开关'))
     }
-    let atManager: abilityAccessCtrl.AtManager = abilityAccessCtrl.createAtManager();
-    // 返回值即开关的最终状态：用户未开启时为 false，需如实透传给 checkAndRequest
+    const atManager: abilityAccessCtrl.AtManager = abilityAccessCtrl.createAtManager();
+    // 系统弹窗就地授权，返回值即开关的最终状态：用户未开启时为 false
     return atManager.requestGlobalSwitch(context, abilityAccessCtrl.SwitchType.LOCATION)
   }
 }

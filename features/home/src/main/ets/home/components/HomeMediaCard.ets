@@ -1,5 +1,4 @@
-import { MediaManager, MediaState, PlayMode, TimeHelper } from 'common'
-import { IBestToast } from '@ibestservices/ibest-ui-v2'
+import { MediaManager, MediaState, PlayMode, TimeHelper, Toast } from 'common'
 import { hilog } from '@kit.PerformanceAnalysisKit'
 import { BusinessError } from '@kit.BasicServicesKit'
 import { SectionCard } from '../SectionCard'
@@ -34,7 +33,7 @@ export struct HomeMediaCard {
       })
       // 创建期间组件可能已销毁：立即释放，避免 avPlayer 泄漏
       if (this.destroyed) {
-        manager.clear().catch((e: BusinessError) => {
+        manager.release().catch((e: BusinessError) => {
           hilog.warn(DOMAIN, TAG, `clear ：${e?.code} ${e?.message}`);
         })
         return
@@ -54,7 +53,7 @@ export struct HomeMediaCard {
   aboutToDisappear(): void {
     this.destroyed = true
     // clear() 失败不影响销毁流程，但需记录而非用空 catch 静默吞掉
-    this.mediaManager?.clear().catch((e: BusinessError) => {
+    this.mediaManager?.release().catch((e: BusinessError) => {
       hilog.warn(DOMAIN, TAG, `clear ：${e?.code} ${e?.message}`);
     })
     this.mediaManager = undefined
@@ -73,24 +72,24 @@ export struct HomeMediaCard {
     Row({ space: 8 }) {
       Button('选择音乐').onClick(async () => {
         try {
-          await this.mediaManager?.setAndPrepare(0)
-          await this.mediaManager?.play()
+          // setAndPlay 内部一路执行到播放命令被接受，无需再单独调 play()
+          await this.mediaManager?.setAndPlay(0)
         } catch (e) {
-          IBestToast.show('音频加载失败')
+          Toast.show('音频加载失败')
         }
       }).backgroundColor('#111827')
       Button('暂停').onClick(async () => {
         try {
           await this.mediaManager?.pause()
         } catch (e) {
-          IBestToast.show('暂停失败')
+          Toast.show('暂停失败')
         }
       }).backgroundColor('#F59E0B')
       Button('播放').onClick(async () => {
         try {
           await this.mediaManager?.play()
         } catch (e) {
-          IBestToast.show('播放失败')
+          Toast.show('播放失败')
         }
       }).backgroundColor('#2563EB')
     }

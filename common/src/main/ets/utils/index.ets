@@ -7,3 +7,5 @@ export * from './MediaManager'
 export * from './TimeHelper'
 
 export * from './Breakpoint'
+
+export * from './Toast'

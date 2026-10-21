@@ -1,7 +1,6 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AppStorageV2, window } from '@kit.ArkUI';
-import { IBestInit } from '@ibestservices/ibest-ui-v2/Index';
 import { EnvEnum, EnvironmentManager, GlobalState, PreferenceManager, RouteManager, } from 'common';
 import { webview } from '@kit.ArkWeb';
 
@@ -37,7 +36,8 @@ export default class EntryAbility extends UIAbility {
 
   /**
    * 处理 want 携带的深链（热启动场景）：仅在已同意隐私后跳转，避免绕过隐私门。
-   * 冷启动由 Index 页面在导航挂载后消费，见 Index.aboutToAppear。
+   * 冷启动由 Index 在隐私同意与 Navigation 挂载后消费
+   * （onAgreed 回调与 onAppear 两处调 consumeDeepLink）。
    */
   private handleDeepLink(): void {
     try {
@@ -47,10 +47,7 @@ export default class EntryAbility extends UIAbility {
     } catch (e) {
       return
     }
-    const params = this.globalState.wantParameters
-    if (params && params.toUrl) {
-      // 仅允许应用内部 scheme 深链，避免外部诱导打开任意网页
-      RouteManager.getInstance().pushDeepLink(String(params.toUrl))
+    if (RouteManager.getInstance().consumeWantDeepLink(this.globalState.wantParameters)) {
       // 消费后清空，避免重复跳转
       this.globalState.wantParameters = undefined
     }
@@ -63,24 +60,12 @@ export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onWindowStageCreate');
     this.globalState.windowStage = windowStage
-    let page = ''
-    try {
-      if (PreferenceManager.hasSync('agreePrivacy')) {
-        page = 'pages/Index'
-      } else {
-        page = 'pages/PrivacyPage'
-      }
-    } catch (e) {
-      page = 'pages/PrivacyPage'
-      hilog.error(DOMAIN, TAG, '获取agreePrivacy失败');
-    }
-    windowStage.loadContent(page, (err) => {
+    // 启动只加载唯一 @Entry 页面；隐私门由 Index 内部条件渲染（未同意时整屏 PrivacyPage 组件）
+    windowStage.loadContent('pages/Index', (err) => {
       if (err.code) {
         hilog.error(DOMAIN, TAG, 'windowStage Failed to load the content. Cause: %{public}s', JSON.stringify(err));
         return;
       }
-      // 初始化UI组件库
-      IBestInit(windowStage, this.context)
       try {
         this.updateWinInfo(windowStage.getMainWindowSync())
       } catch (error) {

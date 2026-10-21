@@ -10,7 +10,6 @@
 | 构建工具 | Hvigor |
 | SDK | HarmonyOS 6.0.2 |
 | HTTP | `@ohos/axios` ^2.2.6 |
-| UI 组件库 | `@ibestservices/ibest-ui-v2` ^1.0.5 |
 
 ## 快速开始
 

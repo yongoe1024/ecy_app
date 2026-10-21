@@ -1,9 +1,9 @@
+import { Toast } from '../../utils';
 import { RouterParams } from "./RouterModel";
 import { RouteTable } from "./RouteTable";
 import { UserManager } from '../user/UserManager';
 import { uri } from '@kit.ArkTS';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { IBestToast } from "@ibestservices/ibest-ui-v2";
 import { hilog } from "@kit.PerformanceAnalysisKit";
 
 const DOMAIN: number = 0x0000;
@@ -61,7 +61,7 @@ export class RouteManager {
    */
   public popTo(pathName: string, animated?: boolean): void {
     if (this.pageStack?.popToName(pathName, animated) == -1) {
-      IBestToast.show('目标页面不存在')
+      Toast.show('目标页面不存在')
     }
   }
 
@@ -89,6 +89,19 @@ export class RouteManager {
       return
     }
     this.push({ url })
+  }
+
+  /**
+   * 消费主 Ability want 携带的深链（toUrl 参数）：存在则按内部 scheme 跳转。
+   * 隐私门校验由调用方保证：EntryAbility 热启动查偏好，Index 由渲染分支天然保证。
+   * @returns 是否消费了深链（true 时调用方应清空 wantParameters，防止重复跳转）
+   */
+  public consumeWantDeepLink(params?: Record<string, Object>): boolean {
+    if (params && params.toUrl) {
+      this.pushDeepLink(String(params.toUrl))
+      return true
+    }
+    return false
   }
 
   /** 深链不得携带 http(s) 外链 src，防止经内部 WebView 路由打开任意网页 */
@@ -130,7 +143,7 @@ export class RouteManager {
       }, true)
         .catch((e: BusinessError) => {
           hilog.error(DOMAIN, TAG, `push login ：${e.code} ${e.message}`);
-          IBestToast.show('登录页面不存在')
+          Toast.show('登录页面不存在')
         })
       return
     }
@@ -141,7 +154,7 @@ export class RouteManager {
         options?.onPop?.(popInfo)
       }, options?.animated).catch((e: BusinessError) => {
         hilog.error(DOMAIN, TAG, `push web ：${e.code} ${e.message}`);
-        IBestToast.show('WEB页面跳转失败')
+        Toast.show('WEB页面跳转失败')
       })
     } else {
       try {
@@ -168,11 +181,11 @@ export class RouteManager {
           options?.animated
         ).catch((e: BusinessError) => {
           hilog.error(DOMAIN, TAG, `push ：${e.code} ${e.message}`);
-          IBestToast.show('目标页面不存在')
+          Toast.show('目标页面不存在')
         })
       } catch (e) {
         hilog.error(DOMAIN, TAG, `push parse url ：${e?.message}`);
-        IBestToast.show('目标页面不存在')
+        Toast.show('目标页面不存在')
       }
     }
   }

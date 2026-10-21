@@ -1,5 +1,4 @@
-import { IBestToast } from '@ibestservices/ibest-ui-v2'
-import { TimeHelper, TimerType } from 'common'
+import { TimeHelper, TimerType, Toast } from 'common'
 import { SectionCard } from '../SectionCard'
 
 const TIMER_DURATION_MS = 90 * 1000
@@ -29,7 +28,7 @@ export struct HomeTimerCard {
       },
       onReachLimit: () => {
         this.timerRunning = false
-        IBestToast.show('倒计时结束')
+        Toast.show('倒计时结束')
       }
     })
     this.timerLabel = TimeHelper.formatClock(TIMER_DURATION_MS)

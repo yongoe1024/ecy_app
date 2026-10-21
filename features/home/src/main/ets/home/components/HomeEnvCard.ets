@@ -1,6 +1,5 @@
-import { EnvEnum, EnvironmentManager, GlobalState } from 'common'
+import { EnvEnum, EnvironmentManager, GlobalState, Toast } from 'common'
 import { AppStorageV2 } from '@kit.ArkUI'
-import { IBestToast } from '@ibestservices/ibest-ui-v2'
 import { hilog } from '@kit.PerformanceAnalysisKit'
 import { SectionCard } from '../SectionCard'
 
@@ -19,9 +18,9 @@ export struct HomeEnvCard {
       hilog.error(DOMAIN, TAG, `switchEnv ：${e.code} ${e.message}`);
       // code 1401：环境已落盘但自动重启失败，提示手动重启；其余（如持久化失败）视为切换失败
       if (e.code === 1401) {
-        IBestToast.show('环境已切换，请手动重启应用以生效')
+        Toast.show('环境已切换，请手动重启应用以生效')
       } else {
-        IBestToast.show('环境切换失败，请重试')
+        Toast.show('环境切换失败，请重试')
       }
     }
   }

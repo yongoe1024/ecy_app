@@ -1,5 +1,4 @@
-import { IBestButton, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui-v2';
-import { RouteManager, UserManager } from 'common';
+import { RouteManager, Toast, UserManager } from 'common';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN: number = 0x0000;
@@ -35,13 +34,13 @@ export struct LoginPage {
 
   async doLogin(): Promise<void> {
     if (!this.phone || !this.code) {
-      IBestToast.show('请输入手机号与验证码')
+      Toast.show('请输入手机号与验证码')
       return
     }
     this.loading = true
     try {
       await UserManager.getInstance().login(this.phone, this.code)
-      IBestToast.show('登录成功')
+      Toast.show('登录成功')
       if (this.targetPage) {
         let result: LoginSuccessResult = {
           loginSuccess: true,
@@ -56,44 +55,63 @@ export struct LoginPage {
       }
     } catch (e) {
       hilog.error(DOMAIN, TAG, `login ：${e?.code} ${e?.message}`);
-      IBestToast.show('登录失败，请检查网络或账号')
+      Toast.show('登录失败，请检查网络或账号')
     } finally {
       this.loading = false
     }
   }
 
+  @Builder
+  navBar() {
+    Row() {
+      Text('‹')
+        .fontSize(30)
+        .width(44)
+        .textAlign(TextAlign.Center)
+        .onClick(() => {
+          RouteManager.getInstance().pop()
+        })
+      Text('登录')
+        .fontSize(17)
+        .fontWeight(FontWeight.Medium)
+        .layoutWeight(1)
+    }
+    .height(48)
+    .width('100%')
+  }
+
   build() {
     NavDestination() {
-      IBestNavBar({
-        title: '登录',
-        isShowStatusBar: true,
-        onLeftClick: () => {
-          RouteManager.getInstance().pop()
+      Column() {
+        this.navBar()
+        Column({ space: 16 }) {
+          TextInput({ text: this.phone, placeholder: '请输入手机号' })
+            .type(InputType.PhoneNumber)
+            .onChange((value: string) => {
+              this.phone = value
+            })
+          TextInput({ text: this.code, placeholder: '请输入验证码' })
+            .type(InputType.Number)
+            .onChange((value: string) => {
+              this.code = value
+            })
+          Button(this.loading ? '登录中...' : '登录')
+            .width('100%')
+            .height(44)
+            .fontSize(16)
+            .fontColor('#FFFFFF')
+            .backgroundColor('#2563EB')
+            .borderRadius(22)
+            .enabled(!this.loading)
+            .onClick(() => {
+              this.doLogin()
+            })
         }
-      })
-      Column({ space: 16 }) {
-        TextInput({ text: this.phone, placeholder: '请输入手机号' })
-          .type(InputType.PhoneNumber)
-          .onChange((value: string) => {
-            this.phone = value
-          })
-        TextInput({ text: this.code, placeholder: '请输入验证码' })
-          .type(InputType.Number)
-          .onChange((value: string) => {
-            this.code = value
-          })
-        IBestButton({
-          text: '登录',
-          type: 'primary',
-          btnWidth: '100%',
-          loading: this.loading,
-          onBtnClick: () => {
-            this.doLogin()
-          }
-        })
+        .padding(20)
+        .width('100%')
       }
-      .padding(20)
       .width('100%')
+      .height('100%')
     }
     .hideTitleBar(true)
     .onReady((context: NavDestinationContext) => {

@@ -7,6 +7,10 @@ export function MainBuilder() {
   Main();
 }
 
+/**
+ * 路由表入口（ecy://entry/main，见 entry 的 router_map.json）：
+ * 深链/跳转场景将 Main 作为 NavDestination 压栈，内容复用 MainTabs。
+ */
 @ComponentV2
 struct Main {
   @Local selectIndex: number = 0
@@ -28,45 +32,51 @@ struct Main {
 
   build() {
     NavDestination() {
-      Tabs({ index: this.selectIndex }) {
+      Column() {
+        Tabs({ index: this.selectIndex }) {
 
-        TabContent() {
-          Home()
-        }
-
-        TabContent() {
-          Column() {
-            Text('购物模块占位')
-              .fontSize(16)
-              .fontColor('#999')
+          TabContent() {
+            Home()
           }
-          .width('100%')
-          .height('100%')
-          .justifyContent(FlexAlign.Center)
-        }
 
-        TabContent() {
-          Mine()
-        }
-      }
-      .layoutWeight(1)
-      .barHeight(0)
-      .edgeEffect(EdgeEffect.Fade)
-      .onChange((index: number) => {
-        this.selectIndex = index
-      })
+          TabContent() {
+            Column() {
+              Text('购物模块占位')
+                .fontSize(16)
+                .fontColor('#999')
+            }
+            .width('100%')
+            .height('100%')
+            .justifyContent(FlexAlign.Center)
+          }
 
-      Row({ space: 30 }) {
-        this.tabBar('首页', $r("app.media.entry_ic_main_home"), $r("app.media.entry_ic_main_home_active"), 0)
-        this.tabBar('购物', $r("app.media.entry_ic_main_shop"), $r("app.media.entry_ic_main_shop_active"), 1)
-        this.tabBar('我的', $r("app.media.entry_ic_main_mine"), $r("app.media.entry_ic_main_mine_active"), 2)
+          TabContent() {
+            Mine()
+          }
+        }
+        .layoutWeight(1)
+        .barHeight(0)
+        .edgeEffect(EdgeEffect.Fade)
+        .onChange((index: number) => {
+          this.selectIndex = index
+        })
+
+        Row({ space: 30 }) {
+          this.tabBar('首页', $r("app.media.entry_ic_main_home"), $r("app.media.entry_ic_main_home_active"), 0)
+          this.tabBar('购物', $r("app.media.entry_ic_main_shop"), $r("app.media.entry_ic_main_shop_active"), 1)
+          this.tabBar('我的', $r("app.media.entry_ic_main_mine"), $r("app.media.entry_ic_main_mine_active"), 2)
+        }
+        .padding({ top: 10, bottom: this.globalState.bottomRectHeight })
+        .borderColor('#eee')
+        .borderWidth({ top: 1 })
+        .justifyContent(FlexAlign.SpaceAround)
+        .width('100%')
       }
-      .padding({ top: 10, bottom: this.globalState.bottomRectHeight })
-      .borderColor('#eee')
-      .borderWidth({ top: 1 })
-      .justifyContent(FlexAlign.SpaceAround)
       .width('100%')
+      .height('100%')
+      .backgroundColor('#FFFFFF')
     }
     .hideTitleBar(true)
+
   }
 }

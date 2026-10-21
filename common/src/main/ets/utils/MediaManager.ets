@@ -2,7 +2,6 @@ import { media } from '@kit.MediaKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { audio } from '@kit.AudioKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { AppError } from '../functions/AppError';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'MediaManager';
@@ -50,6 +49,14 @@ export interface MediaState {
 }
 
 /**
+ * 链路进行中收到的待续播请求（最新胜出）
+ */
+interface PendingPlay {
+  index: number
+  config?: MediaConfig
+}
+
+/**
  * 音视频管理器
  */
 export class MediaManager {
@@ -57,8 +64,10 @@ export class MediaManager {
   private avPlayer: media.AVPlayer
   private context: Context
   private state: MediaState
-  private resolve?: (value: void | PromiseLike<void>) => void;
-  private reject?: (reason?: Object) => void;
+  // 链路互斥：实测连点时两条链的 reset/setUrl 与 prepare/play 重叠会互相打死（5400102），任意时刻只允许一条链
+  private chaining: boolean = false
+  // 链路进行中收到的最新请求，当前链终点自动续播（最新胜出）
+  private pendingPlay?: PendingPlay
 
   constructor(avPlayer: media.AVPlayer, context: Context, state: MediaState) {
     this.avPlayer = avPlayer;
@@ -105,28 +114,24 @@ export class MediaManager {
   }
 
   /**
-   * 设置资源并准备播放（加载资源后可得到时长）；准备完成即 resolve，可继续调用 play()。
-   * @param index 要播放的媒体在 mediaList 中的索引
-   * @param config 可选，用于本次准备时整体覆盖播放配置（如中途切换播放列表 / 播放模式）。
-   *               注意：按整体覆盖——未在 config 中指定的 surfaceID / audioRendererInfo 会被清空；
-   * @throws 失败时 reject：被新的 setAndPrepare 调用取消 → AppError(1301)；其余（reset/prepare/资源加载）→ 底层 BusinessError
+   * 初始化 并准备播放（prepare/play 由状态事件自动续接）
+   * 链路进行中调用时仅记录最新请求，当前链结束后自动续播
+   * @throws BusinessError
    */
-  async setAndPrepare(index: number, config?: MediaConfig): Promise<void> {
-    // 取消上一个仍在等待的 prepare，避免其 Promise 因 resolve/reject 被覆盖而永久挂起
-    this.settle(new AppError(1301, 'setAndPrepare 被新的调用取消'))
-    return new Promise<void>((resolve, reject) => {
-      this.resolve = resolve
-      this.reject = reject
-      // 异步逻辑放到独立方法，避免 async Promise executor 反模式吞掉异常
-      this.runPrepare(index, config)
-    })
+  async setAndPlay(index: number, config?: MediaConfig): Promise<void> {
+    if (this.chaining) {
+      this.pendingPlay = { index: index, config: config }
+      return
+    }
+    this.chaining = true
+    await this.runChain(index, config)
   }
 
   /**
-   * setAndPrepare 的异步执行体：重置播放器、应用配置并设置资源。
-   * 真正的结算由 stateChange/error 回调通过 settle() 完成。
+   * 单条链路执行体：reset → 设置资源；后续 prepare/play 由 initialized/prepared 事件续接，
+   * 链路终点（play 结束 / prepare 失败 / error / 非法索引 / reset·setUrl 抛错）调 finishChain
    */
-  private async runPrepare(index: number, config?: MediaConfig): Promise<void> {
+  private async runChain(index: number, config?: MediaConfig): Promise<void> {
     try {
       await this.avPlayer.reset()
       if (config) {
@@ -138,50 +143,42 @@ export class MediaManager {
       this.state.index = index
       if (index < 0 || index >= this.state.mediaList.length) {
         this.state.index = -1
-        this.settle()
+        this.finishChain()
         return
       }
-      if (this.state.index >= 0 && this.state.mediaList.length > 0) {
-        await this.setUrl(this.state.mediaList[this.state.index])
-      }
+      await this.setUrl(this.state.mediaList[this.state.index])
     } catch (e) {
-      this.settle(e)
+      hilog.error(DOMAIN, TAG, `setAndPlay ：${e.code} ${e.message}`);
+      this.finishChain()
     }
   }
 
   /**
-   * 统一结算 setAndPrepare 返回的 Promise，确保只调用一次并清空引用，
-   * 避免 prepare/error 失败时外层 Promise 永远挂起。
+   * 链路终点：有挂起请求则续播下一条，否则释放互斥标志
    */
-  private settle(err?: Object): void {
-    if (err) {
-      this.reject?.(err)
+  private finishChain(): void {
+    if (!this.chaining) {
+      return
+    }
+    const pending = this.pendingPlay
+    this.pendingPlay = undefined
+    if (pending) {
+      this.runChain(pending.index, pending.config)
     } else {
-      this.resolve?.()
+      this.chaining = false
     }
-    this.resolve = undefined
-    this.reject = undefined
   }
 
   /**
-   * 重置
+   * 释放
    * @throws BusinessError
    */
-  async reset() {
-    return this.avPlayer.reset()
-  }
-
-  /**
-   * 销毁，释放底层 AVPlayer 资源
-   * @throws BusinessError
-   */
-  async clear(): Promise<void> {
+  release(): Promise<void> {
     return this.avPlayer.release()
   }
 
   /**
-   * 播放。需先 `setAndPrepare` 进入已准备状态后调用；
-   * 若 create 之后未准备就调用、或 `clear()` 释放之后再调用，底层 AVPlayer 会 reject。
+   * 恢复播放
    * @throws BusinessError
    */
   async play(): Promise<void> {
@@ -233,21 +230,21 @@ export class MediaManager {
           if (this.state.audioRendererInfo) {
             this.avPlayer.audioRendererInfo = this.state.audioRendererInfo
           }
-          this.avPlayer.prepare()
-            .then(() => {
-              this.settle()
-            })
-            .catch((e: BusinessError) => {
-              hilog.error(DOMAIN, TAG, `initialized - prepare ：${e.code} ${e.message}`);
-              // 关键修复：prepare 失败必须结算 Promise，否则 setAndPrepare 永久挂起
-              this.settle(e)
-            })
-            .finally(() => {
-              this.onChange?.(this.state)
-            })
+          this.avPlayer.prepare().catch((e: BusinessError) => {
+            hilog.error(DOMAIN, TAG, `initialized - prepare ：${e.code} ${e.message}`);
+            this.finishChain()
+          }).finally(() => {
+            this.onChange?.(this.state)
+          })
           break;
         //准备完毕
         case 'prepared':
+          this.avPlayer.play().catch((e: BusinessError) => {
+            hilog.error(DOMAIN, TAG, `prepared - play ：${e.code} ${e.message}`);
+          }).finally(() => {
+            this.onChange?.(this.state)
+            this.finishChain()
+          })
           break;
         // play成功调用后触发该状态机上报
         case 'playing':
@@ -262,6 +259,8 @@ export class MediaManager {
         // 播放结束
         case 'completed':
           try {
+            // 播放已结束，清 isPlay，play() 的守卫才能对 SINGLE 放行重播
+            this.state.isPlay = false
             // 循环
             if (this.state.playMode === PlayMode.SINGLE) {
               await this.play()
@@ -270,8 +269,7 @@ export class MediaManager {
               if (this.state.index >= this.state.mediaList.length) {
                 this.state.index = 0
               }
-              await this.setAndPrepare(this.state.index)
-              await this.play()
+              await this.setAndPlay(this.state.index)
             } else if (this.state.playMode === PlayMode.RANDOM) {
               let index: number = 0
               //do_while循环，求出新的索引
@@ -279,8 +277,7 @@ export class MediaManager {
                 index = Math.floor(Math.random() * this.state.mediaList.length)
               } while (this.state.mediaList.length > 1 && index === this.state.index)
               this.state.index = index
-              await this.setAndPrepare(this.state.index)
-              await this.play()
+              await this.setAndPlay(this.state.index)
             } else if (this.state.playMode === PlayMode.ONCE) {
               await this.avPlayer.reset()
             }
@@ -291,12 +288,14 @@ export class MediaManager {
           break
         case 'stopped':
           // 停止状态，需要再次prepare
+          this.state.index = -1
+          this.state.duration = 0
+          this.state.time = 0
+          this.state.isPlay = false
+          this.onChange?.(this.state)
           break;
         case 'released':
           // 销毁状态，需要重新create
-          // 若释放时仍有挂起的 setAndPrepare（如 prepare 期间调用了 clear），结算它避免调用方永久挂起；
-          // 无挂起时 reject 为 undefined，settle 自然为 no-op
-          this.settle(new AppError(1302, '播放器已释放，setAndPrepare 已取消'))
           this.state.index = -1
           this.state.duration = 0
           this.state.time = 0
@@ -310,10 +309,11 @@ export class MediaManager {
     // 必要事件，idle状态下、未调用设置资源接口前完成设置监听
     this.avPlayer.on('error', (e: BusinessError) => {
       hilog.error(DOMAIN, TAG, `error ：${e.code} ${e.message}`);
-      // 若有挂起的 setAndPrepare，结算它，避免调用方卡死
-      this.settle(e)
       this.avPlayer.reset().catch(() => {
         hilog.error(DOMAIN, TAG, `error：${e.code} ${e.message}`);
+      }).then(() => {
+        // 错误恢复完成后终结当前链（如 set url 失败走 error 事件而非抛错，链路只能在此收尾）
+        this.finishChain()
       });
     });
     // 监听进度条长度，刷新资源时长
