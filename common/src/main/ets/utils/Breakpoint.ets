@@ -1,10 +1,6 @@
-// v2
-// @Env(SystemProperties.BREAK_POINT) breakpoint: uiObserver.WindowSizeLayoutBreakpointInfo; // 正确用法
-
-// Text('Test')
-//  .fontSize( Breakpoint.ofWidth(this.globalState.widthBreakpoint, '14fp', '16fp', '18fp') )
 /**
- * 屏幕断点工具
+ * 屏幕断点工具：按宽/高断点取值，未提供的档位回落到首参。
+ * 取值来源：GlobalState.widthBreakpoint / heightBreakpoint（EntryAbility 维护）。
  */
 export class Breakpoint {
   static ofWidth(point: WidthBreakpoint, xs: Length, sm?: Length, md?: Length, lg?: Length, xl?: Length): Length {

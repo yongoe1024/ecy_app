@@ -14,8 +14,9 @@ export default class EntryAbility extends UIAbility {
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     this.globalState.uiAbilityContext = this.context
+    // 深链不在热启动处理：冷启动时隐私未同意 / Navigation 未挂载，仅暂存，
+    // 由 Index 在隐私同意与挂载后消费（见 handleDeepLink 与 Index）
     this.globalState.wantParameters = want.parameters
-    // 深链推迟到内容加载且隐私已同意后处理，避免绕过隐私门 / 早于 Navigation 挂载
     try {
       this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
     } catch (err) {
@@ -96,33 +97,31 @@ export default class EntryAbility extends UIAbility {
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onBackground');
   }
 
-  /**
-   * 存储窗口高度
-   */
+  /** 记录窗口尺寸与避让区，并注册窗口变化监听 */
   updateWinInfo(windowClass: window.Window) {
     try {
       this.mainWindow = windowClass
-      let uiContext = windowClass.getUIContext()
-      // 设置窗口全屏
+      const uiContext = windowClass.getUIContext()
+      // 全屏布局（内容延伸至状态栏/导航条下）
       windowClass.setWindowLayoutFullScreen(true)
         .catch(() => {
           hilog.error(DOMAIN, TAG, 'Failed to 设置窗口全屏');
         })
-      // 获取避让区域、窗口高度
+      // 获取避让区域
       const statusBar = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
       const navigationArea = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR);
-      // 获取状态栏高度
+      // 状态栏高度
       this.globalState.topRectHeight = uiContext.px2vp(statusBar.topRect.height)
-      // 获取导航条高度
+      // 导航条高度
       this.globalState.bottomRectHeight = uiContext.px2vp(navigationArea.bottomRect.height)
-      // 获取窗口高度
+      // 窗口尺寸
       const props = windowClass.getWindowProperties()
       this.globalState.windowWidth = uiContext.px2vp(props.windowRect.width)
       this.globalState.windowHeight = uiContext.px2vp(props.windowRect.height)
       // 初始化断点：windowSizeChange 仅在尺寸变化时回调，首屏需先取一次，否则响应式布局会按默认 XS 渲染
       this.globalState.widthBreakpoint = uiContext.getWindowWidthBreakpoint();
       this.globalState.heightBreakpoint = uiContext.getWindowHeightBreakpoint();
-      // 注册监听避让区
+      // 监听避让区变化
       windowClass.on('avoidAreaChange', (data) => {
         if (data.type === window.AvoidAreaType.TYPE_SYSTEM) {
           const topRectHeight = data.area.topRect.height;
@@ -132,14 +131,14 @@ export default class EntryAbility extends UIAbility {
           this.globalState.bottomRectHeight = uiContext.px2vp(bottomRectHeight)
         }
       })
-      // 监听窗口高度
+      // 监听窗口尺寸变化
       windowClass.on('windowSizeChange', (data) => {
         this.globalState.windowWidth = uiContext.px2vp(data.width)
         this.globalState.windowHeight = uiContext.px2vp(data.height)
         this.globalState.widthBreakpoint = uiContext.getWindowWidthBreakpoint();
         this.globalState.heightBreakpoint = uiContext.getWindowHeightBreakpoint();
       });
-      // 监听键盘高度
+      // 监听键盘高度变化
       windowClass.on('keyboardHeightChange', (data: number) => {
         this.globalState.keyboardHeight = uiContext.px2vp(data)
       })

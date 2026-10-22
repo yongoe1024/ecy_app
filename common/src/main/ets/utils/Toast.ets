@@ -1,5 +1,9 @@
 import { AppStorageV2 } from '@kit.ArkUI';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { GlobalState } from '../functions';
+
+const DOMAIN: number = 0x0000;
+const TAG: string = 'Toast';
 
 /**
  * 全局 Toast（替代三方 IBestToast）。
@@ -15,9 +19,8 @@ export class Toast {
     }
     try {
       windowStage.getMainWindowSync().getUIContext().getPromptAction().showToast({ message })
-    } catch (error) {
-      console.log('Toast错误')
-      // TODO: Implement error handling.
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `showToast ：${e?.code} ${e?.message}`);
     }
   }
 }

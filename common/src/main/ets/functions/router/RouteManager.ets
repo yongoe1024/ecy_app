@@ -42,32 +42,24 @@ export class RouteManager {
     return this.pageStack
   }
 
-  /**
-   * 返回页面
-   */
+  /** 出栈返回上一页 */
   public pop(animated?: boolean): void {
     this.pageStack?.pop(animated)
   }
 
-  /**
-   * 返回页面：带参数
-   */
+  /** 返回上一页并回传结果 */
   public popResult(result: Object, animated?: boolean): void {
     this.pageStack?.pop(result, animated)
   }
 
-  /**
-   * 返回到指定页面
-   */
+  /** 返回到栈内指定名称页面 */
   public popTo(pathName: string, animated?: boolean): void {
     if (this.pageStack?.popToName(pathName, animated) == -1) {
       Toast.show('目标页面不存在')
     }
   }
 
-  /**
-   * 返回到根页面
-   */
+  /** 返回到根页面 */
   public popToRoot(animated?: boolean): void {
     this.pageStack?.popToIndex(0, animated)
   }
@@ -118,13 +110,11 @@ export class RouteManager {
     }
   }
 
-  /**
-   * 跳转，支持http目标
-   */
+  /** 跳转；url 为 http(s) 链接时经 COMMON_WEB 打开；needLogin 未登录时先经登录页 */
   public push(options: RouterParams): void {
     // 需要登录：未登录时先跳登录页，登录成功后再导向原目标页面
     if (options?.needLogin && !UserManager.getInstance().getToken()) {
-      let loginParams: LoginRouteParams = {
+      const loginParams: LoginRouteParams = {
         targetPage: options.url
       }
       if (options.params) {
@@ -147,9 +137,8 @@ export class RouteManager {
         })
       return
     }
-    // web页面
+    // http 链接经内置 WebView 打开
     if (options.url.startsWith('http://') || options.url.startsWith('https://')) {
-      // 打开Web
       this.pageStack?.pushDestinationByName(RouteTable.COMMON_WEB, { src: options.url }, (popInfo: PopInfo) => {
         options?.onPop?.(popInfo)
       }, options?.animated).catch((e: BusinessError) => {
@@ -158,11 +147,11 @@ export class RouteManager {
       })
     } else {
       try {
-        // 解析问号传参
+        // 解析问号传参（query 并入 params）
         const uriInstance = new uri.URI(options.url);
         const paramNames = uriInstance.getQueryNames();
         // 浅拷贝，避免改写调用方传入的 params 对象（ArkTS 不支持对象展开）
-        let params: Record<string, ESObject> = {}
+        const params: Record<string, ESObject> = {}
         const sourceParams = options.params
         if (sourceParams) {
           Object.keys(sourceParams).forEach((key: string) => {
@@ -170,10 +159,10 @@ export class RouteManager {
           })
         }
         paramNames.forEach(item => {
-          let value = uriInstance.getQueryValue(item)
+          const value = uriInstance.getQueryValue(item)
           params[item] = value
         })
-        // 开始跳转，传入 真实路由参数
+        // 路由名去掉 ?query 部分后跳转
         this.pageStack?.pushDestinationByName(
           options.url.split('?')[0],
           params,

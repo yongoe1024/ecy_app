@@ -14,7 +14,8 @@ export function WebViewPageBuilder() {
 }
 
 /**
- * web框架
+ * 通用 WebView 容器页（ecy://common/web）：接收 src 参数，原生导航栏 + WebComponent。
+ * 返回键优先回退网页历史，无历史时出栈。
  */
 @ComponentV2
 export struct WebViewPage {
@@ -26,7 +27,7 @@ export struct WebViewPage {
 
   pop() {
     try {
-      let result = this.controller.accessBackward();
+      const result = this.controller.accessBackward();
       if (result) {
         this.controller.backward();
       } else {

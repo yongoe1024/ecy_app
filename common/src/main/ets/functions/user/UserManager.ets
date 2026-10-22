@@ -12,7 +12,7 @@ const DOMAIN: number = 0x0000;
 const TAG: string = 'UserManager';
 
 /**
- * 用户管理器
+ * 会话与用户信息：token 持久化、登录/登出、用户信息缓存与监听者通知。
  */
 export class UserManager {
   private static instance: UserManager
@@ -41,12 +41,10 @@ export class UserManager {
     return deviceInfo.ODID.replace(/-/ig, '');
   }
 
-  // 系统版本
   getOsVersion(): string {
     return deviceInfo.distributionOSVersion;
   }
 
-  // 设备名
   getDeviceModel(): string {
     return deviceInfo.marketName;
   }
@@ -62,21 +60,15 @@ export class UserManager {
     return UserManager.instance
   }
 
-  /**
-   * 注册登陆事件
-   */
+  /** 注册登录/用户信息回调；重复注册同一回调自动忽略 */
   registerListener(listener: UserCallback): void {
-    // 避免重复添加相同回调
     if (!this.listeners.includes(listener)) {
       this.listeners.push(listener);
     }
   }
 
-  /**
-   * 取消注册
-   */
+  /** 反注册回调 */
   unRegisterListener(listener: UserCallback): void {
-    // 找到回调在数组中的索引并删除
     const index = this.listeners.findIndex(cb => cb === listener);
     if (index !== -1) {
       this.listeners.splice(index, 1);
@@ -88,13 +80,13 @@ export class UserManager {
    * 约定：读查询，存储异常按「未登录」处理——返回 '' 并记日志（被请求拦截器同步调用，故不抛出）。
    */
   getToken(): string {
-    // 已登录
+    // 已登录（内存缓存命中）
     if (this.token) {
       return this.token
     }
     try {
-      // 重启app拿历史记录
-      let token = PreferenceManager.getSync('token', '') as string
+      // 冷启动后从偏好恢复
+      const token = PreferenceManager.getSync('token', '') as string
       if (token) {
         this.token = token
         return token

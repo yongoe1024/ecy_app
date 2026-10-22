@@ -9,26 +9,20 @@ export interface ResponseModel<T = Object> {
   data: T
 }
 
-/**
- * 上传文件参数
- */
+/** 上传文件参数 */
 export interface UploadParams {
-  //接口路径
   url: string
-  //文件路径，不限制在cacheDir、filesDir等
+  /** 待上传文件路径，不限于 cacheDir / filesDir */
   filePath: string
-  //进度回调
+  /** 进度回调，参数为百分比 0-100 */
   onProgress?: (value: number) => void
 }
 
-/**
- * 下载文件参数
- */
+/** 下载文件参数 */
 export interface DownloadParams {
-  //请求url
   url: string
-  //比如：getContext(this).cacheDir}/test并将文件存储在此路径下
+  /** 下载落盘路径，如 `${getContext(this).cacheDir}/test` */
   filePath: string
-  //进度回调
+  /** 进度回调，参数为百分比 0-100 */
   onProgress?: (value: number) => void
 }

@@ -1,13 +1,6 @@
 import { webview } from '@kit.ArkWeb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
-/** Demo
- * WebComponent({
- * src: this.src,
- * loadProgress: this.loadProgress!!,
- * title: this.title!!
- * })
- */
 const DOMAIN: number = 0x0000;
 const TAG: string = 'WebComponent';
 
@@ -17,13 +10,18 @@ export interface WebLoadError {
   message: string
 }
 
+/**
+ * 通用 Web 组件：加载 src 页面，上报标题/进度/主框架错误，内置「加载失败」兜底层。
+ * 用法（@Event 回调须以 !! 断言传入）：
+ * WebComponent({ src: this.src, loadProgress: this.loadProgress!!, title: this.title!! })
+ */
 @ComponentV2
 export struct WebComponent {
   @Require @Param src: string
   @Param controller: webview.WebviewController = new webview.WebviewController()
   @Param title: string = ''
   @Event $title: Callback<string>
-  // 进度条
+  // 加载进度 0-100
   @Param loadProgress: number = 0
   @Event $loadProgress: Callback<number>
   // 主框架加载失败回调（可选）：调用方可据此自定义错误处理；与内置兜底层互不影响
@@ -81,12 +79,13 @@ export struct WebComponent {
       })
         .width('100%')
         .height('100%')
-        .javaScriptAccess(this.javaScriptAccess)//允许javascript
-        .domStorageAccess(this.domStorageAccess)//允许dom存放数据
-        .geolocationAccess(this.geolocationAccess)//允许定位
-        .fileAccess(this.fileAccess)//允许访问本地文件
-        .mixedMode(MixedMode.None)//禁止 https 页面加载 http 资源（混合内容）
-        .cacheMode(CacheMode.Online)//设置缓存模式
+        .javaScriptAccess(this.javaScriptAccess) // 允许 JavaScript
+        .domStorageAccess(this.domStorageAccess) // 允许 DOM 存储
+        .geolocationAccess(this.geolocationAccess) // 允许定位
+        .fileAccess(this.fileAccess) // 允许访问本地文件
+        // 禁止 https 页面加载 http 资源（混合内容）
+        .mixedMode(MixedMode.None)
+        .cacheMode(CacheMode.Online) // 缓存模式
         .overScrollMode(OverScrollMode.NEVER)
         .onPageBegin(() => {
           // 主框架开始加载：清掉上一次的失败状态，使重试 / 重新导航后兜底层消失

@@ -19,7 +19,8 @@ const DOMAIN: number = 0x0000;
 const TAG: string = 'NetManager';
 
 /**
- * 网络请求管理器
+ * 网络请求管理器：axios 封装（token 头注入、调试日志脱敏、上传/下载）。
+ * 业务契约见 request 注释。
  */
 export class NetManager {
   private static instance: NetManager
@@ -31,9 +32,8 @@ export class NetManager {
       baseURL: EnvironmentManager.getInstance().getBaseUrl(),
       timeout: 10000,
     })
-    // 添加请求拦截器
+    // 请求拦截器：注入认证头
     this.axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-      // 对请求数据做点什么
       const token = UserManager.getInstance().getToken()
       if (token) {
         config.headers['Authorization'] = token
@@ -41,13 +41,14 @@ export class NetManager {
       this.logRequest(config)
       return config;
     });
-    // 添加响应拦截器
+    // 响应拦截器：剥壳返回业务体
+    // 返回剥壳后的业务体（ResponseModel）而非 AxiosResponse
     this.axiosInstance.interceptors.response.use((response: AxiosResponse) => {
-      // 对响应数据做点什么
+      // 返回剥壳后的业务体（ResponseModel）而非 AxiosResponse
       this.logResponse(response)
       return response.data
     }, (error: AxiosError) => {
-      // 对响应错误做点什么：仅记录日志，Toast 由调用方按需展示
+      // 仅记录日志，Toast 由调用方按需展示
       this.logError(error)
       return Promise.reject(error);
     });
@@ -122,18 +123,12 @@ export class NetManager {
   }
 
 
-  /**
-   * 上传文件
-   * @throws BusinessError
-   * @param context 上下文
-   * @param params 上传参数
-   * @returns ResponseModel
-   */
+  /** 上传文件（multipart；进度回调为百分比 0-100） */
   async upload(context: Context, params: UploadParams): Promise<ResponseModel> {
     // 真实落盘路径，上传结束后需删除，避免缓存目录堆积
     const fileName = await this.copyToCache(context, params.filePath)
     const realPath = `${context.cacheDir}/${fileName}`
-    let formData = new FormData()
+    const formData = new FormData()
     formData.append('file', `internal://cache/${fileName}`);
     try {
       // 发送请求
@@ -161,13 +156,7 @@ export class NetManager {
     }
   }
 
-  /**
-   * 下载到 cacheDir 目录；目标文件已存在时先删除，避免下载失败
-   * @throws BusinessError
-   * @param context 上下文
-   * @param params 下载参数
-   * @returns ResponseModel
-   */
+  /** 下载文件到 params.filePath（进度回调为百分比 0-100） */
   async download(context: Context, params: DownloadParams): Promise<ResponseModel> {
     // 目标文件已存在时先删除，避免 axios 下载失败；删除失败不应中断下载
     try {
@@ -196,11 +185,11 @@ export class NetManager {
    * @throws BusinessError
    */
   private async copyToCache(context: Context, path: string): Promise<string> {
-    let dir = context.cacheDir
-    let dotIndex = path.lastIndexOf('.')
-    let ext = dotIndex >= 0 ? path.substring(dotIndex) : ''
-    let uuid = util.generateRandomUUID() + ext
-    let pathIO = fileIo.openSync(path, fileIo.OpenMode.READ_ONLY)
+    const dir = context.cacheDir
+    const dotIndex = path.lastIndexOf('.')
+    const ext = dotIndex >= 0 ? path.substring(dotIndex) : ''
+    const uuid = util.generateRandomUUID() + ext
+    const pathIO = fileIo.openSync(path, fileIo.OpenMode.READ_ONLY)
     try {
       fileIo.copyFileSync(pathIO.fd, `${dir}/${uuid}`)
     } finally {

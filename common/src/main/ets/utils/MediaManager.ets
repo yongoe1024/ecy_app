@@ -6,17 +6,14 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 const DOMAIN: number = 0x0000;
 const TAG: string = 'MediaManager';
 
-/**
- * 初始化配置,ONCE需要重新setup
- */
 export enum PlayMode {
-  // 单个循环
+  /** 单曲循环 */
   SINGLE,
-  // 顺序播放
+  /** 顺序播放 */
   ORDER,
-  // 随机播放
+  /** 随机播放 */
   RANDOM,
-  // 可以重新调用play播放
+  /** 播完即 reset 回 idle，需重新 setAndPlay 才能再播 */
   ONCE
 }
 
@@ -25,16 +22,13 @@ export enum PlayMode {
  */
 export interface MediaConfig {
   playMode: PlayMode
-  // 支持http链接、rawfile的文件名
+  /** 支持 http 链接或 rawfile 文件名 */
   mediaList?: string[]
   surfaceID?: string
   audioRendererInfo?: audio.AudioRendererInfo
 }
 
-/**
- * 播放器状态
- * ps: 声音、倍速等没有
- */
+/** 播放器状态 */
 export interface MediaState {
   index: number
   time: number
@@ -209,21 +203,19 @@ export class MediaManager {
    * 初始化回调
    */
   private async initCallback(): Promise<void> {
-    // 此时create后，为idle状态
-    // 状态机变化回调函数
+    // create 后处于 idle 态，注册状态机与事件回调
     this.avPlayer.on('stateChange', async (state: string, reason: media.StateChangeReason) => {
       switch (state) {
+        // reset 成功后进入：清 UI 进度态
         case 'idle':
-          //成功调用reset接口后触发该状态机上报
-          //在这里设置url，就进入初始化
           this.state.isPlay = false
           this.state.time = 0
           this.state.duration = 0
           this.onChange?.(this.state)
           break;
-        //初始化
+        // url 设置完成后进入：配好画面/音频属性再 prepare
         case 'initialized':
-          // 设置显示画面，当播放的资源为纯音频时无需设置
+          // 视频画面：纯音频资源无需设置
           if (this.state.surfaceID) {
             this.avPlayer.surfaceId = this.state.surfaceID;
           }
@@ -237,7 +229,7 @@ export class MediaManager {
             this.onChange?.(this.state)
           })
           break;
-        //准备完毕
+        // prepare 完成：起播
         case 'prepared':
           this.avPlayer.play().catch((e: BusinessError) => {
             hilog.error(DOMAIN, TAG, `prepared - play ：${e.code} ${e.message}`);
@@ -246,12 +238,12 @@ export class MediaManager {
             this.finishChain()
           })
           break;
-        // play成功调用后触发该状态机上报
+        // play() 成功后上报
         case 'playing':
           this.state.isPlay = true
           this.onChange?.(this.state)
           break;
-        // pause成功调用后触发该状态机上报
+        // pause() 成功后上报
         case 'paused':
           this.state.isPlay = false
           this.onChange?.(this.state)
@@ -261,7 +253,7 @@ export class MediaManager {
           try {
             // 播放已结束，清 isPlay，play() 的守卫才能对 SINGLE 放行重播
             this.state.isPlay = false
-            // 循环
+            // 按播放模式续接下一首
             if (this.state.playMode === PlayMode.SINGLE) {
               await this.play()
             } else if (this.state.playMode === PlayMode.ORDER) {
@@ -272,7 +264,7 @@ export class MediaManager {
               await this.setAndPlay(this.state.index)
             } else if (this.state.playMode === PlayMode.RANDOM) {
               let index: number = 0
-              //do_while循环，求出新的索引
+              // 随机取新索引（多个资源时避免与当前重复）
               do {
                 index = Math.floor(Math.random() * this.state.mediaList.length)
               } while (this.state.mediaList.length > 1 && index === this.state.index)
@@ -286,16 +278,9 @@ export class MediaManager {
             hilog.error(DOMAIN, TAG, `completed：${e.code} ${e.message}`);
           }
           break
+        // stopped / released 后均需重新 setAndPlay 从头走链路
         case 'stopped':
-          // 停止状态，需要再次prepare
-          this.state.index = -1
-          this.state.duration = 0
-          this.state.time = 0
-          this.state.isPlay = false
-          this.onChange?.(this.state)
-          break;
         case 'released':
-          // 销毁状态，需要重新create
           this.state.index = -1
           this.state.duration = 0
           this.state.time = 0
@@ -306,7 +291,7 @@ export class MediaManager {
           break;
       }
     });
-    // 必要事件，idle状态下、未调用设置资源接口前完成设置监听
+    // error 必须在 idle 态（设置资源前）注册
     this.avPlayer.on('error', (e: BusinessError) => {
       hilog.error(DOMAIN, TAG, `error ：${e.code} ${e.message}`);
       this.avPlayer.reset().catch(() => {
@@ -316,30 +301,30 @@ export class MediaManager {
         this.finishChain()
       });
     });
-    // 监听进度条长度，刷新资源时长
+    // 资源时长上报
     this.avPlayer.on('durationUpdate', (duration: number) => {
       this.state.duration = duration
       this.onChange?.(this.state)
     });
-    // 监听进度条当前位置，刷新当前时间
+    // 播放进度上报
     this.avPlayer.on('timeUpdate', (time: number) => {
       this.state.time = time
       this.onChange?.(this.state)
     });
-    // 使用seek()跳转到指定播放位置后，如果seek操作成功
+    // seek 完成
     this.avPlayer.on('seekDone', (time: number) => {
       this.onChange?.(this.state)
     });
-    // 使用setSpeed()设置播放倍速后，如果setSpeed操作成功
+    // 倍速设置完成
     this.avPlayer.on('speedDone', (speed: number) => {
     });
-    // 使用setVolume()调节播放音量后，如果setVolume操作成功
+    // 音量变化
     this.avPlayer.on('volumeChange', (vol: number) => {
     });
-    // 监听网络播放缓冲信息，用于上报缓冲百分比以及缓存播放进度
+    // 网络缓冲进度
     this.avPlayer.on('bufferingUpdate', (infoType: media.BufferingInfoType, value: number) => {
     });
-    // 监听音频焦点切换信息，搭配属性audioInterruptMode使用
+    // 音频焦点切换（来电、其它媒体抢占）
     this.avPlayer.on('audioInterrupt', (info: audio.InterruptEvent) => {
       // 音频焦点被抢占（来电、其它媒体播放等）：标记为暂停并通知 UI，避免状态与实际不一致
       if (info.eventType === audio.InterruptType.INTERRUPT_TYPE_BEGIN) {
@@ -359,7 +344,7 @@ export class MediaManager {
    * @throws BusinessError
    */
   private async setUrl(url: string): Promise<void> {
-    // 本地 和 网络url
+    // 网络链接直接设 url；本地资源走 rawfile fd
     if (url.startsWith('http')) {
       this.avPlayer.url = url
     } else {

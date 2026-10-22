@@ -15,9 +15,7 @@ interface PermissionRequestResult {
   permanentlyDenied: boolean
 }
 
-/**
- * 权限管理类
- */
+/** 动态权限申请：未授予的批量申请；「不再询问」的永久拒绝引导去设置页 */
 export class PermissionManager {
   /**
    * 获取权限，永久拒绝时弹窗引导跳转设置页
@@ -54,10 +52,10 @@ export class PermissionManager {
    */
   private static check(permissions: Permissions[]): Permissions[] {
     const manager = abilityAccessCtrl.createAtManager()
-    //获取应用信息
+    // 获取应用信息（accessTokenId）
     const appInfo = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION)
     const tokenId = appInfo.appInfo.accessTokenId
-    //校验每个权限,并返回校验的类型
+    // 逐个校验权限，收集未授予项
     const noPermissionList: Permissions[] = []
     permissions.forEach((per) => {
       try {
@@ -71,14 +69,11 @@ export class PermissionManager {
         noPermissionList.push(per)
       }
     })
-    //处理授权结果
+    // 返回未授权列表
     return noPermissionList
   }
 
-  /**
-   * 动态申请权限，并区分首次拒绝与「不再询问」的永久拒绝
-   * @throws
-   */
+  /** 动态申请权限，并区分首次拒绝与「不再询问」的永久拒绝 */
   private static async request(permissions: Permissions[]): Promise<PermissionRequestResult> {
     const state = AppStorageV2.connect(GlobalState)!
     const context = state.uiAbilityContext
@@ -103,17 +98,14 @@ export class PermissionManager {
     return { granted, permanentlyDenied }
   }
 
-  /**
-   * 显示权限申请对话框
-   * @throws
-   */
+  /** 弹窗引导用户前往系统设置页开启权限 */
   private static async showDialog(failStr: string): Promise<void> {
     const state = AppStorageV2.connect(GlobalState)!;
     // windowStage 尚未就绪时无法弹窗，显式记录而非静默失败
     if (!state.windowStage) {
       throw new AppError(1202, 'PermissionManager: windowStage 未初始化，请在 Ability 创建后调用');
     }
-    // 使用鸿蒙的对话框组件
+    // 系统弹窗对话框
     const result = await state.windowStage.getMainWindowSync()
       .getUIContext()
       .getPromptAction()
@@ -137,7 +129,7 @@ export class PermissionManager {
       return state.uiAbilityContext?.startAbility({
         bundleName: "com.huawei.hmos.settings",
         abilityName: "com.huawei.hmos.settings.MainAbility",
-        uri: "application_info_entry", //参数名
+        uri: "application_info_entry", // 设置页的应用信息入口
         parameters: {
           pushParams: appInfo.name
         }
