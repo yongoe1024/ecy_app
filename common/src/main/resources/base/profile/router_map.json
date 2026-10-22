@@ -7,6 +7,14 @@
       "data": {
         "description": "webview"
       }
+    },
+    {
+      "name": "ecy://common/env",
+      "pageSourceFile": "src/main/ets/functions/environment/pages/EnvPage.ets",
+      "buildFunction": "EnvPageBuilder",
+      "data": {
+        "description": "环境切换"
+      }
     }
   ]
 }
