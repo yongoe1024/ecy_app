@@ -42,6 +42,18 @@ export class RouteManager {
     return this.pageStack
   }
 
+  /**
+   * 当前栈顶页面名（Navigation 栈自底向上，末位即当前页）。
+   * Navigation 首页（如 entry 的 Index）不压栈，栈空时返回 undefined。
+   */
+  public getCurrentPageName(): string | undefined {
+    const names = this.pageStack?.getAllPathName()
+    if (!names || names.length === 0) {
+      return undefined
+    }
+    return names[names.length - 1]
+  }
+
   /** 出栈返回上一页 */
   public pop(animated?: boolean): void {
     this.pageStack?.pop(animated)

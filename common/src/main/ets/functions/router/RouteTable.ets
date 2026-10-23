@@ -8,8 +8,8 @@ export class RouteTable {
   /** common  **/
   // web
   public static readonly COMMON_WEB: string = "ecy://common/web";
-  // 环境切换（调试用，非 PRD 环境的悬浮球入口）
-  public static readonly COMMON_ENV: string = "ecy://common/env";
+  // 调试页（环境切换等调试能力，非 PRD 环境的悬浮球入口）
+  public static readonly COMMON_DEBUG: string = "ecy://common/debug";
   /** mine  **/
   // 登录
   public static readonly MINE_LOGIN: string = "ecy://mine/login";

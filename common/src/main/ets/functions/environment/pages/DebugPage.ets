@@ -4,7 +4,7 @@ import { AppStorageV2 } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN: number = 0x0000;
-const TAG: string = 'EnvPage';
+const TAG: string = 'DebugPage';
 
 /** 环境选项（顺序即页面展示顺序） */
 const ENV_OPTIONS: EnvEnum[] = [EnvEnum.DEV, EnvEnum.TEST, EnvEnum.PRD];
@@ -24,17 +24,17 @@ function envLabel(env: EnvEnum): string {
 }
 
 @Builder
-export function EnvPageBuilder() {
-  EnvPage()
+export function DebugPageBuilder() {
+  DebugPage()
 }
 
 /**
- * 环境切换页（ecy://common/env，悬浮球入口，仅非 PRD 环境可达）。
+ * 调试页（ecy://common/debug，悬浮球入口，仅非 PRD 环境可达）：当前提供环境切换。
  * 点击目标环境即 setEnv：EnvironmentManager 持久化后自动重启应用生效。
  * 避让约定：顶部避让只在本页最外层 Column 做一次，navBar 不再叠加。
  */
 @ComponentV2
-export struct EnvPage {
+export struct DebugPage {
   @Local globalState: GlobalState = AppStorageV2.connect(GlobalState, () => new GlobalState())!
   // 当前环境快照（页面存续期间环境变更会重启应用，无需响应式跟踪）
   private current: EnvEnum = EnvironmentManager.getInstance().getEnv()

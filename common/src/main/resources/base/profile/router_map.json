@@ -9,11 +9,11 @@
       }
     },
     {
-      "name": "ecy://common/env",
-      "pageSourceFile": "src/main/ets/functions/environment/pages/EnvPage.ets",
-      "buildFunction": "EnvPageBuilder",
+      "name": "ecy://common/debug",
+      "pageSourceFile": "src/main/ets/functions/environment/pages/DebugPage.ets",
+      "buildFunction": "DebugPageBuilder",
       "data": {
-        "description": "环境切换"
+        "description": "调试页"
       }
     }
   ]
