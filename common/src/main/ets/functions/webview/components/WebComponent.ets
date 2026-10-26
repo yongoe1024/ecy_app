@@ -74,7 +74,7 @@ export struct WebComponent {
   build() {
     Stack() {
       Web({
-        controller: this.controller, renderMode: RenderMode.SYNC_RENDER,
+        controller: this.controller,
         src: this.src
       })
         .width('100%')
