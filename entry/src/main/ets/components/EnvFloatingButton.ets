@@ -21,7 +21,8 @@ export struct EnvFloatingButton {
   private dragStartY: number = 0
 
   aboutToAppear(): void {
-    // 初始位置：右上角、状态栏之下；windowWidth 未就绪时 clamp 会兜底
+    // 初始位置：右上角、状态栏之下；windowWidth 由 Index 挂载条件保证已就绪
+    // （updateWinInfo 中 topRectHeight 先于 windowWidth 写入，二者同时就绪）
     this.x = this.globalState.windowWidth - BALL_SIZE - EDGE_MARGIN
     this.y = this.globalState.topRectHeight + 120
   }

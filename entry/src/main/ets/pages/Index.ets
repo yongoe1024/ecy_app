@@ -47,8 +47,10 @@ struct Index {
           this.consumeDeepLink()
         })
       }
-      if (this.showEnvButton) {
-        // 屏幕最顶层的调试悬浮球：不随启动分流/路由页切换消失
+      // 屏幕最顶层的调试悬浮球：不随启动分流/路由页切换消失。
+      // 须窗口尺寸就绪后再挂载：球的初始位置在 aboutToAppear 一次性计算，
+      // 安卓冷启动时 windowWidth 可能晚于页面就绪，未就绪挂载会把球定位到屏幕外且无法自行恢复
+      if (this.showEnvButton && this.globalState.windowWidth > 0) {
         EnvFloatingButton()
       }
     }
