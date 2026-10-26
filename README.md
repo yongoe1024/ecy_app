@@ -9,7 +9,7 @@
 | 开发语言 | ArkTS |
 | 构建工具 | Hvigor |
 | SDK | HarmonyOS 7 |
-| HTTP | `@ohos/axios` ^2.2.6 |
+| HTTP | `@ohos/axios` |
 
 ## 快速开始
 
