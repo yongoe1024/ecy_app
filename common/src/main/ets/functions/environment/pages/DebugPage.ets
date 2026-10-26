@@ -50,7 +50,7 @@ export struct DebugPage {
       Toast.show('环境已保存，重启应用后生效')
     } catch (e) {
       hilog.error(DOMAIN, TAG, `setEnv ：${e?.code} ${e?.message}`);
-      Toast.show('环境切换失败')
+      Toast.show('需手动重启')
     }
   }
 
