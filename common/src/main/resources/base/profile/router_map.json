@@ -1,0 +1,20 @@
+{
+  "routerMap": [
+    {
+      "name": "ecy://common/web",
+      "pageSourceFile": "src/main/ets/functions/webview/pages/WebViewPage.ets",
+      "buildFunction": "WebViewPageBuilder",
+      "data": {
+        "description": "webview"
+      }
+    },
+    {
+      "name": "ecy://common/debug",
+      "pageSourceFile": "src/main/ets/functions/environment/pages/DebugPage.ets",
+      "buildFunction": "DebugPageBuilder",
+      "data": {
+        "description": "调试页"
+      }
+    }
+  ]
+}

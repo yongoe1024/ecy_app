@@ -1,0 +1,12 @@
+{
+  "routerMap": [
+    {
+      "name": "ecy://mine/login",
+      "pageSourceFile": "src/main/ets/mine/Login.ets",
+      "buildFunction": "LoginPageBuilder",
+      "data": {
+        "description": "登录"
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+/node_modules
+/oh_modules
+/local.properties
+.idea
+**/build
+/.hvigor
+.cxx
+.preview/
+/.clangd
+/.clang-format
+/.clang-tidy
+**/.test
+/.appanalyzer
+
+BuildProfile.ets
+.DS_Store

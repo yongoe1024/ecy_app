@@ -1,0 +1,244 @@
+import { GlobalState, PreferenceManager, Toast } from "common"
+import { AppStorageV2 } from "@kit.ArkUI"
+import { common } from "@kit.AbilityKit"
+import { hilog } from "@kit.PerformanceAnalysisKit";
+
+const DOMAIN = 0x0000;
+const TAG = 'PrivacyPage'
+
+// TODO: 替换为真实的协议页面或链接（建议接入 WebViewPage / 内置协议页）
+
+// 隐私门组件：由 Index 条件渲染（非 @Entry 页面，不走路由），同意后经 onAgreed 通知切换主界面
+@ComponentV2
+export struct PrivacyPage {
+  @Local globalState: GlobalState = AppStorageV2.connect(GlobalState)!
+  @Event onAgreed: () => void = () => {
+  }
+
+  build() {
+    Stack({ alignContent: Alignment.Top }) {
+      Column()
+        .width('100%')
+        .height(320)
+        .linearGradient({
+          angle: 180,
+          colors: [['#F4F8FF', 0], ['#E6F0FF', 0.45], ['#FFF7ED', 1]]
+        })
+
+      Column()
+        .width(180)
+        .height(180)
+        .borderRadius(90)
+        .backgroundColor('#33FFFFFF')
+        .position({ top: 72 + this.globalState.topRectHeight, right: -48 })
+
+      Column()
+        .width(120)
+        .height(120)
+        .borderRadius(60)
+        .backgroundColor('#22FFFFFF')
+        .position({ top: 196 + this.globalState.topRectHeight, left: -32 })
+
+      Scroll() {
+        Column({ space: 20 }) {
+          Column({ space: 14 }) {
+            Row() {
+              Stack({ alignContent: Alignment.Center }) {
+                Column()
+                  .width(52)
+                  .height(52)
+                  .borderRadius(26)
+                  .backgroundColor('#FFFFFF')
+                  .shadow({
+                    radius: 16,
+                    color: '#14325D1A',
+                    offsetX: 0,
+                    offsetY: 10
+                  })
+
+                Text('隐')
+                  .fontSize(24)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#1D4ED8')
+              }
+
+              Blank()
+
+              Text('隐私保护说明')
+                .fontSize(12)
+                .fontColor('#5B6B83')
+                .padding({
+                  left: 10,
+                  right: 10,
+                  top: 6,
+                  bottom: 6
+                })
+                .backgroundColor('#F6F9FF')
+                .borderRadius(999)
+            }
+            .width('100%')
+
+            Text('我们重视你的个人信息与使用体验')
+              .fontSize(28)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#172033')
+              .lineHeight(38)
+              .width('100%')
+
+            Text(
+              '在继续使用 ECY-APP 前，请先了解服务协议与隐私政策。我们会按照法律法规要求，尽力保障你的个人信息安全、透明、可控。')
+              .fontSize(15)
+              .fontColor('#526077')
+              .lineHeight(24)
+              .width('100%')
+          }
+          .alignItems(HorizontalAlign.Start)
+          .padding({ left: 4, right: 4, top: 8 })
+
+          Column({ space: 16 }) {
+            Column({ space: 10 }) {
+              Row({ space: 10 }) {
+                Column()
+                  .width(10)
+                  .height(10)
+                  .borderRadius(5)
+                  .backgroundColor('#1D4ED8')
+
+                Text('在你同意后，我们将为你提供完整服务')
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor('#1F2937')
+              }
+              .width('100%')
+              .justifyContent(FlexAlign.Start)
+
+              Text('不同意隐私政策将无法继续进入应用。你可以先查看相关协议内容，再决定是否继续。')
+                .fontSize(14)
+                .fontColor('#667085')
+                .lineHeight(22)
+                .width('100%')
+            }
+            .alignItems(HorizontalAlign.Start)
+            .padding(18)
+            .width('100%')
+            .backgroundColor('#F8FAFF')
+            .borderRadius(20)
+
+            Column({ space: 12 }) {
+              Text('请阅读以下内容')
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#1F2937')
+                .width('100%')
+
+              Text() {
+                Span('继续使用即表示你已阅读并同意 ')
+                  .fontSize(14)
+                  .fontColor('#4B5563')
+
+                Span('《ECY-APP服务协议》')
+                  .fontSize(14)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor('#2563EB')
+                  .decoration({ type: TextDecorationType.Underline, color: '#2563EB' })
+                  .onClick(() => {
+                    // TODO: 接入后跳转《ECY-APP服务协议》真实协议页/链接
+                    Toast.show('协议页面待接入')
+                  })
+
+                Span(' 与 ')
+                  .fontSize(14)
+                  .fontColor('#4B5563')
+
+                Span('《隐私政策》')
+                  .fontSize(14)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor('#2563EB')
+                  .decoration({ type: TextDecorationType.Underline, color: '#2563EB' })
+                  .onClick(() => {
+                    // TODO: 接入后跳转《隐私政策》真实协议页/链接
+                    Toast.show('协议页面待接入')
+                  })
+
+                Span('。')
+                  .fontSize(14)
+                  .fontColor('#4B5563')
+              }
+              .fontSize(14)
+              .lineHeight(24)
+              .textAlign(TextAlign.Start)
+              .width('100%')
+
+              Text('我们仅在必要范围内收集和使用信息，并持续优化你的隐私与数据安全体验。')
+                .fontSize(13)
+                .fontColor('#7A8699')
+                .lineHeight(22)
+                .width('100%')
+            }
+            .alignItems(HorizontalAlign.Start)
+            .padding(20)
+            .width('100%')
+            .backgroundColor('#FFFFFF')
+            .borderRadius(24)
+            .shadow({
+              radius: 24,
+              color: '#102A4312',
+              offsetX: 0,
+              offsetY: 12
+            })
+          }
+          .width('100%')
+
+          Column({ space: 10 }) {
+            Button('同意并继续')
+              .width('100%')
+              .height(44)
+              .fontSize(16)
+              .fontColor('#FFFFFF')
+              .backgroundColor('#2563EB')
+              .borderRadius(22)
+              .onClick(() => {
+                try {
+                  PreferenceManager.putSync('agreePrivacy', true)
+                  // 响应式切换主界面：无页面跳转（router.replace 不跨平台、loadContent 在安卓
+                  // 存在适配不确定性），条件渲染由引擎保证三端一致
+                  this.onAgreed?.()
+                } catch (e) {
+                  hilog.error(DOMAIN, TAG, `onBtnClick ：${e.code} ${e.message}`);
+                  Toast.show('保存失败，请重试')
+                }
+              })
+            Button('暂不同意')
+              .width('100%')
+              .height(44)
+              .fontSize(16)
+              .fontColor('#374151')
+              .backgroundColor('#F3F4F6')
+              .borderRadius(22)
+              .onClick(() => {
+                const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+                context.terminateSelf().catch(() => {
+                  hilog.error(DOMAIN, TAG, 'terminateSelf失败');
+                })
+              })
+          }
+          .margin({ top: 4, bottom: 28 })
+          .width('100%')
+        }
+        .padding({
+          left: 20,
+          right: 20,
+          top: 24 + this.globalState.topRectHeight,
+          bottom: 12
+        })
+        .width('100%')
+      }
+      .scrollBar(BarState.Off)
+      .width('100%')
+      .height('100%')
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor('#FDFEFE')
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "routerMap": [
+    {
+      "name": "ecy://entry/main",
+      "pageSourceFile": "src/main/ets/pages/Main.ets",
+      "buildFunction": "MainBuilder",
+      "data": {
+        "description": "主页面"
+      }
+    }
+  ]
+}
