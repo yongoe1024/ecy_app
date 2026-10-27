@@ -34,7 +34,6 @@ export struct Home {
             HomeRouteCard()
             HomeLocationCard()
             HomeMediaCard()
-            HomeWebPreviewSection()
           }
           .width('100%')
         }

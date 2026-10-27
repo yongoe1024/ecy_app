@@ -1,6 +1,6 @@
-import { AppStorageV2 } from '@kit.ArkUI'
-import { GlobalState, RouteManager, RouteTable, UserCallback, UserManager, Toast } from 'common'
-import { hilog } from '@kit.PerformanceAnalysisKit'
+import { AppStorageV2 } from '@kit.ArkUI';
+import { GlobalState, RouteManager, RouteTable, Toast, UserCallback, UserManager } from 'common';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'Mine';

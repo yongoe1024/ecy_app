@@ -1,7 +1,7 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AppStorageV2, window } from '@kit.ArkUI';
-import { EnvEnum, EnvironmentManager, GlobalState, PreferenceManager, RouteManager, } from 'common';
+import { EnvironmentManager, GlobalState, PreferenceManager, RouteManager, } from 'common';
 import { webview } from '@kit.ArkWeb';
 
 const DOMAIN = 0x0000;
@@ -23,7 +23,7 @@ export default class EntryAbility extends UIAbility {
       hilog.error(DOMAIN, TAG, 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
     }
     hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onCreate');
-    if (EnvironmentManager.getInstance().getEnv() === EnvEnum.DEV) {
+    if (EnvironmentManager.getInstance().getEnv() !== 'PROD') {
       webview.WebviewController.setWebDebuggingAccess(true);
     }
   }

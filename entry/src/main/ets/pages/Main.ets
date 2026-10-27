@@ -1,6 +1,6 @@
-import { GlobalState } from "common";
-import { AppStorageV2 } from "@kit.ArkUI";
-import { Home, Mine } from "home";
+import { GlobalState } from 'common';
+import { AppStorageV2 } from '@kit.ArkUI';
+import { Home, Mine } from 'home';
 
 @Builder
 export function MainBuilder() {

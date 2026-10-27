@@ -1,9 +1,9 @@
-import { geoLocationManager } from "@kit.LocationKit";
+import { geoLocationManager } from '@kit.LocationKit';
 import { abilityAccessCtrl } from '@kit.AbilityKit';
-import { PermissionManager } from "../../utils";
-import { AppStorageV2 } from "@kit.ArkUI";
-import { GlobalState } from "./..";
-import { AppError } from "../AppError";
+import { PermissionManager } from '../../utils';
+import { AppStorageV2 } from '@kit.ArkUI';
+import { GlobalState } from './..';
+import { AppError } from '../AppError';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'LocationManager';

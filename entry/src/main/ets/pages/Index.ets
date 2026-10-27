@@ -1,4 +1,4 @@
-import { EnvEnum, EnvironmentManager, GlobalState, PreferenceManager, RouteManager, RouteTable } from 'common';
+import { EnvironmentManager, GlobalState, PreferenceManager, RouteManager, RouteTable } from 'common';
 import { AppStorageV2 } from '@kit.ArkUI';
 import { PrivacyPage } from './PrivacyPage';
 import { EnvFloatingButton } from '../components/EnvFloatingButton';
@@ -9,8 +9,7 @@ struct Index {
   @Local globalState: GlobalState = AppStorageV2.connect(GlobalState)!
   // 隐私同意状态：未同意时整屏渲染隐私页，同意后切换为 Navigation（响应式，无页面跳转）
   @Local agreed: boolean = false
-  // 调试悬浮球仅非 PRD 环境挂载（环境切换会重启应用，内存值即当前环境）
-  private showEnvButton: boolean = EnvironmentManager.getInstance().getEnv() !== EnvEnum.PRD
+  private showEnvButton: boolean = EnvironmentManager.getInstance().getBuildEnv() !== 'PROD'
 
   aboutToAppear(): void {
     try {

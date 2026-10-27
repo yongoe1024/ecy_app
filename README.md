@@ -1,14 +1,15 @@
 # ecy app
 
-基于 HarmonyOS / ArkTS 的多模块脚手架。把网络、存储、登录、路由、权限、定位、媒体等常用能力封装成开箱即用的 Manager，可直接作为新项目的起点。
+基于 HarmonyOS / ArkTS 的多模块脚手架。把网络、存储、登录、路由、权限、定位、媒体等常用能力封装成开箱即用的
+Manager，可直接作为新项目的起点。
 
 ## 技术栈
 
-| 类型 | 内容 |
-|------|------|
-| 开发语言 | ArkTS |
-| 构建工具 | Hvigor |
-| SDK | HarmonyOS 7 |
+| 类型   | 内容            |
+|------|---------------|
+| 开发语言 | ArkTS         |
+| 构建工具 | Hvigor        |
+| SDK  | HarmonyOS 7   |
 | HTTP | `@ohos/axios` |
 
 ## 快速开始
@@ -18,23 +19,24 @@
 3. 首页「Common Lab」以卡片形式演示了下列全部能力，是各 Manager 的活文档——对照 `features/home` 源码即可学习标准用法。
 
 > **统一约定**：所有能力都从 `common` 模块导入（`import { XxxManager } from 'common'`）。
-> 业务能力为单例，用 `XxxManager.getInstance()` 获取；`PreferenceManager` / `PermissionManager` / `TimeHelper` / `Breakpoint` 是静态工具类，直接调用静态方法。
+> 业务能力为单例，用 `XxxManager.getInstance()` 获取；`PreferenceManager` / `PermissionManager` / `TimeHelper` /
+`Breakpoint` 是静态工具类，直接调用静态方法。
 
 ## 能力总览
 
-| 能力 | 入口类 | 核心方法 |
-|------|--------|---------|
-| 网络请求 | `NetManager` | `request` · `upload` · `download` |
-| 用户与登录 | `UserManager` | `login` · `logout` · `getToken` · `getUserInfo` |
-| 本地存储 | `PreferenceManager` | `getSync` · `putSync` · `deleteSync` |
-| 环境切换 | `EnvironmentManager` | `getEnv` · `getBaseUrl` · `setEnv` |
-| 路由导航 | `RouteManager` | `push` · `pop` · `popTo` |
-| WebView | `WebComponent` | 组件，必填 `src` |
-| 权限申请 | `PermissionManager` | `requestPermissions` |
-| 定位 / 地理编码 | `LocationManager` | `checkAndRequest` · `getAddressByLatLon` |
-| 媒体播放 | `MediaManager` | `create` · `setAndPlay` · `play` · `pause` |
-| 计时器 | `TimeHelper` | `build` · `start` · `stop` |
-| 响应式布局 | `Breakpoint` | `ofWidth` · `ofHeight` |
+| 能力        | 入口类                  | 核心方法                                            |
+|-----------|----------------------|-------------------------------------------------|
+| 网络请求      | `NetManager`         | `request` · `upload` · `download`               |
+| 用户与登录     | `UserManager`        | `login` · `logout` · `getToken` · `getUserInfo` |
+| 本地存储      | `PreferenceManager`  | `getSync` · `putSync` · `deleteSync`            |
+| 环境切换      | `EnvironmentManager` | `getEnv` · `getBaseUrl` · `setEnv`              |
+| 路由导航      | `RouteManager`       | `push` · `pop` · `popTo`                        |
+| WebView   | `WebComponent`       | 组件，必填 `src`                                     |
+| 权限申请      | `PermissionManager`  | `requestPermissions`                            |
+| 定位 / 地理编码 | `LocationManager`    | `checkAndRequest` · `getAddressByLatLon`        |
+| 媒体播放      | `MediaManager`       | `create` · `setAndPlay` · `play` · `pause`      |
+| 计时器       | `TimeHelper`         | `build` · `start` · `stop`                      |
+| 响应式布局     | `Breakpoint`         | `ofWidth` · `ofHeight`                          |
 
 ---
 
@@ -217,16 +219,17 @@ Column().width(Breakpoint.ofWidth(
 
 ## 错误处理约定
 
-按方法所在「层」决定如何处理返回与错误——照下表写即可。脚手架自身抛出 / reject 的错误统一为 `AppError`（继承 `Error`、带 `code`）；底层 SDK 错误以 `BusinessError` 透传。两者都可读 `e.code` / `e.message`。
+按方法所在「层」决定如何处理返回与错误——照下表写即可。脚手架自身抛出 / reject 的错误统一为 `AppError`（继承 `Error`、带
+`code`）；底层 SDK 错误以 `BusinessError` 透传。两者都可读 `e.code` / `e.message`。
 
-| 层 | 代表方法 | 失败时 | 你该怎么做 |
-|----|---------|--------|-----------|
-| 读查询（同步） | `getToken` · `getEnv` | 记日志，返回安全默认值（`''`/`false`/`DEV`） | 直接用返回值 |
-| 写变更（同步） | `putSync` · `deleteSync` · `setToken` · `setEnv` | **抛异常** | `try / catch` |
-| 网络 | `request` · `upload` · `download` | 有响应即 resolve（即使 `code !== 200`）；仅网络/超时 reject | 先查 `res.code`，再 `catch` |
-| 领域异步 | `login` · `LocationManager.*` · `MediaManager.*` | `reject(AppError)` | `try/catch` 或 `.catch` |
-| 状态查询（异步） | `getUserInfo` · `refreshUserInfo` | `undefined` ＝ 未登录；出错才 reject | 先判 `undefined`，再 `catch` |
-| 路由（UI 命令） | `push` · `pop*` | 只记日志 / Toast，**不抛** | 直接调用 |
+| 层         | 代表方法                                             | 失败时                                           | 你该怎么做                    |
+|-----------|--------------------------------------------------|-----------------------------------------------|--------------------------|
+| 读查询（同步）   | `getToken` · `getEnv`                            | 记日志，返回安全默认值（`''`/`false`/`DEV`）               | 直接用返回值                   |
+| 写变更（同步）   | `putSync` · `deleteSync` · `setToken` · `setEnv` | **抛异常**                                       | `try / catch`            |
+| 网络        | `request` · `upload` · `download`                | 有响应即 resolve（即使 `code !== 200`）；仅网络/超时 reject | 先查 `res.code`，再 `catch`  |
+| 领域异步      | `login` · `LocationManager.*` · `MediaManager.*` | `reject(AppError)`                            | `try/catch` 或 `.catch`   |
+| 状态查询（异步）  | `getUserInfo` · `refreshUserInfo`                | `undefined` ＝ 未登录；出错才 reject                  | 先判 `undefined`，再 `catch` |
+| 路由（UI 命令） | `push` · `pop*`                                  | 只记日志 / Toast，**不抛**                           | 直接调用                     |
 
 ---
 
@@ -245,20 +248,22 @@ ecy_app
 ### 启动流程
 
 1. `EntryStage` 创建全局状态 `GlobalState`（`AppStorageV2`）。
-2. `EntryAbility.onWindowStageCreate` 固定加载 `Index`；`Index` 依据首选项 `agreePrivacy` 条件渲染：未同意 → `PrivacyPage` 组件，已同意 → `Navigation` 主界面。
+2. `EntryAbility.onWindowStageCreate` 固定加载 `Index`；`Index` 依据首选项 `agreePrivacy` 条件渲染：未同意 → `PrivacyPage`
+   组件，已同意 → `Navigation` 主界面。
 3. 深链（`want.parameters.toUrl`）在隐私同意后、进入 `Index` 时消费；热启动经 `onNewWant` 处理。
 
-> 当前未注册外部 `ecy://` scheme，深链仅来自**应用内部** want 传参；如需支持外部应用 / 浏览器唤起，参见 `entry/src/main/module.json5` 中 `skills` 的注释。
+> 当前未注册外部 `ecy://` scheme，深链仅来自**应用内部** want 传参；如需支持外部应用 / 浏览器唤起，参见
+`entry/src/main/module.json5` 中 `skills` 的注释。
 
 ### 页面与路由
 
-| 页面 | 路由 | 说明 |
-|------|------|------|
-| PrivacyPage | —（组件，`Index` 条件渲染） | 隐私同意页，首次启动显示 |
-| Index | `pages/Index` | 导航容器（`Navigation` + `NavPathStack`） |
-| Main | `ecy://entry/main` | 底部 Tab 主页面（首页 / 购物 / 我的） |
-| WebViewPage | `ecy://common/web` | 通用 WebView，打开 http 链接时自动进入 |
-| LoginPage | `ecy://mine/login` | 登录页，`needLogin` 未登录时自动跳转 |
+| 页面          | 路由                 | 说明                                  |
+|-------------|--------------------|-------------------------------------|
+| PrivacyPage | —（组件，`Index` 条件渲染） | 隐私同意页，首次启动显示                        |
+| Index       | `pages/Index`      | 导航容器（`Navigation` + `NavPathStack`） |
+| Main        | `ecy://entry/main` | 底部 Tab 主页面（首页 / 购物 / 我的）            |
+| WebViewPage | `ecy://common/web` | 通用 WebView，打开 http 链接时自动进入          |
+| LoginPage   | `ecy://mine/login` | 登录页，`needLogin` 未登录时自动跳转            |
 
 ---
 

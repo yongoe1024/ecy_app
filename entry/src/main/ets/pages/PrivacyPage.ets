@@ -1,7 +1,7 @@
-import { GlobalState, PreferenceManager, Toast } from "common"
-import { AppStorageV2 } from "@kit.ArkUI"
-import { common } from "@kit.AbilityKit"
-import { hilog } from "@kit.PerformanceAnalysisKit";
+import { GlobalState, PreferenceManager, Toast } from 'common';
+import { AppStorageV2 } from '@kit.ArkUI';
+import { common } from '@kit.AbilityKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'PrivacyPage'

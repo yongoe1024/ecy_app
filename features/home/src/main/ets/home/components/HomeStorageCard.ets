@@ -1,6 +1,6 @@
-import { PreferenceManager, UserManager, Toast } from 'common'
-import { SectionCard } from '../SectionCard'
-import { hilog } from '@kit.PerformanceAnalysisKit'
+import { PreferenceManager, Toast, UserManager } from 'common';
+import { SectionCard } from '../SectionCard';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'HomeStorageCard';

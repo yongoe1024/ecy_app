@@ -6,14 +6,13 @@ import axios, {
   AxiosResponse,
   FormData,
   InternalAxiosRequestConfig
-} from "@ohos/axios";
-import { UserManager } from "../user/UserManager";
-import { DownloadParams, ResponseModel, UploadParams } from "./NetModel";
-import { fileIo } from "@kit.CoreFileKit";
-import { util } from "@kit.ArkTS";
-import { EnvEnum } from "../environment/GlobalModel";
-import { EnvironmentManager } from "../environment/EnvironmentManager";
-import { hilog } from "@kit.PerformanceAnalysisKit";
+} from '@ohos/axios';
+import { UserManager } from '../user/UserManager';
+import { DownloadParams, ResponseModel, UploadParams } from './NetModel';
+import { fileIo } from '@kit.CoreFileKit';
+import { util } from '@kit.ArkTS';
+import { EnvironmentManager } from '../environment/EnvironmentManager';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'NetManager';
@@ -25,11 +24,11 @@ const TAG: string = 'NetManager';
 export class NetManager {
   private static instance: NetManager
   private axiosInstance: AxiosInstance
-  private readonly isDebug: boolean = EnvironmentManager.getInstance().getEnv() === EnvEnum.DEV
+  private readonly isDebug: boolean = EnvironmentManager.getInstance().getEnv() !== 'PROD'
 
   private constructor() {
     this.axiosInstance = axios.create({
-      baseURL: EnvironmentManager.getInstance().getBaseUrl(),
+      baseURL: EnvironmentManager.getInstance().getEnvConfig().baseUrl,
       timeout: 10000,
     })
     // 请求拦截器：注入认证头

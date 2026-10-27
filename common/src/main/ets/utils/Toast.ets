@@ -1,6 +1,6 @@
-import { AppStorageV2 } from '@kit.ArkUI';
-import { hilog } from '@kit.PerformanceAnalysisKit';
-import { GlobalState } from '../functions';
+import { AppStorageV2 } from "@kit.ArkUI";
+import { GlobalState } from "../functions";
+import { hilog } from "@kit.PerformanceAnalysisKit";
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'Toast';

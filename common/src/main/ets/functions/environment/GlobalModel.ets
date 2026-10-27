@@ -27,10 +27,3 @@ export class GlobalState {
   // 主 AbilityStageContext
   abilityStageContext?: common.AbilityStageContext
 }
-
-/** 系统环境 */
-export enum EnvEnum {
-  DEV = 'DEV',
-  TEST = 'TEST',
-  PRD = 'PRD'
-}

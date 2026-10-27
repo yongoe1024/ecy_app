@@ -1,10 +1,10 @@
 import { Toast } from '../../utils';
-import { RouterParams } from "./RouterModel";
-import { RouteTable } from "./RouteTable";
+import { RouterParams } from './RouterModel';
+import { RouteTable } from './RouteTable';
 import { UserManager } from '../user/UserManager';
 import { uri } from '@kit.ArkTS';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { hilog } from "@kit.PerformanceAnalysisKit";
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'RouteManager';

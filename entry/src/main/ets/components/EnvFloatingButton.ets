@@ -1,4 +1,4 @@
-import { EnvEnum, EnvironmentManager, GlobalState, RouteManager, RouteTable } from 'common';
+import { GlobalState, RouteManager, RouteTable } from 'common';
 import { AppStorageV2 } from '@kit.ArkUI';
 
 /** 球体尺寸与屏幕边缘留白 */
@@ -35,20 +35,9 @@ export struct EnvFloatingButton {
     this.y = maxY > 0 ? Math.min(Math.max(y, EDGE_MARGIN), maxY) : y
   }
 
-  private envBadge(): string {
-    switch (EnvironmentManager.getInstance().getEnv()) {
-      case EnvEnum.DEV:
-        return 'D'
-      case EnvEnum.TEST:
-        return 'T'
-      default:
-        return 'P'
-    }
-  }
-
   build() {
-    Text(this.envBadge())
-      .fontSize(16)
+    Text('debug')
+      .fontSize(10)
       .fontWeight(FontWeight.Bold)
       .fontColor('#FFFFFF')
       .textAlign(TextAlign.Center)

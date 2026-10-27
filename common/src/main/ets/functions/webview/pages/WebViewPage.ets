@@ -1,7 +1,7 @@
 import { Toast } from '../../../utils';
-import { webview } from '@kit.ArkWeb'
-import { WebComponent } from '../components/WebComponent'
-import { hilog } from '@kit.PerformanceAnalysisKit'
+import { webview } from '@kit.ArkWeb';
+import { WebComponent } from '../components/WebComponent';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { GlobalState, RouteManager } from '../..';
 import { AppStorageV2 } from '@kit.ArkUI';
 

@@ -1,7 +1,7 @@
-import { MediaManager, MediaState, PlayMode, TimeHelper, Toast } from 'common'
-import { hilog } from '@kit.PerformanceAnalysisKit'
-import { BusinessError } from '@kit.BasicServicesKit'
-import { SectionCard } from '../SectionCard'
+import { MediaManager, MediaState, PlayMode, TimeHelper, Toast } from 'common';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { SectionCard } from '../SectionCard';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'HomeMediaCard';

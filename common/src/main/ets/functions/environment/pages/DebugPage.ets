@@ -1,27 +1,11 @@
-import { EnvEnum, EnvironmentManager, GlobalState, RouteManager } from '../..';
-import { Toast } from '../../../utils';
+import { EnvironmentManager, GlobalState, RouteManager } from '../..';
 import { AppStorageV2 } from '@kit.ArkUI';
-import { hilog } from '@kit.PerformanceAnalysisKit';
+import { envConfig } from '../EnvConfig';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'DebugPage';
 
-/** 环境选项（顺序即页面展示顺序） */
-const ENV_OPTIONS: EnvEnum[] = [EnvEnum.DEV, EnvEnum.TEST, EnvEnum.PRD];
-
-/** 环境显示名 */
-function envLabel(env: EnvEnum): string {
-  switch (env) {
-    case EnvEnum.DEV:
-      return '开发环境 DEV'
-    case EnvEnum.TEST:
-      return '测试环境 TEST'
-    case EnvEnum.PRD:
-      return '正式环境 PRD'
-    default:
-      return env
-  }
-}
+const ENV_OPTIONS: string[] = Object.keys(envConfig);
 
 @Builder
 export function DebugPageBuilder() {
@@ -37,22 +21,7 @@ export function DebugPageBuilder() {
 export struct DebugPage {
   @Local globalState: GlobalState = AppStorageV2.connect(GlobalState, () => new GlobalState())!
   // 当前环境快照（页面存续期间环境变更会重启应用，无需响应式跟踪）
-  private current: EnvEnum = EnvironmentManager.getInstance().getEnv()
-
-  private select(env: EnvEnum): void {
-    if (env === this.current) {
-      Toast.show('已是当前环境')
-      return
-    }
-    try {
-      EnvironmentManager.getInstance().setEnv(env)
-      // setEnv 成功即重启；走到这里说明重启失败（已落盘），提示手动重启
-      Toast.show('环境已保存，重启应用后生效')
-    } catch (e) {
-      hilog.error(DOMAIN, TAG, `setEnv ：${e?.code} ${e?.message}`);
-      Toast.show('需手动重启')
-    }
-  }
+  private current: string = EnvironmentManager.getInstance().getEnv()
 
   @Builder
   navBar() {
@@ -77,9 +46,9 @@ export struct DebugPage {
   }
 
   @Builder
-  envItem(env: EnvEnum) {
+  envItem(env: string) {
     Row({ space: 10 }) {
-      Text(envLabel(env))
+      Text(env)
         .fontSize(15)
         .fontColor(this.current === env ? '#2b6aff' : '#172033')
         .fontWeight(this.current === env ? FontWeight.Medium : FontWeight.Normal)
@@ -108,7 +77,7 @@ export struct DebugPage {
       color: this.current === env ? '#2b6aff' : Color.Transparent
     })
     .onClick(() => {
-      this.select(env)
+      EnvironmentManager.getInstance().setEnv(env)
     })
   }
 
@@ -123,9 +92,9 @@ export struct DebugPage {
             .fontColor('#999999')
             .width('100%')
             .padding({ left: 4, right: 4 })
-          ForEach(ENV_OPTIONS, (env: EnvEnum) => {
+          ForEach(ENV_OPTIONS, (env: string) => {
             this.envItem(env)
-          }, (env: EnvEnum): string => env)
+          })
         }
         .padding(16)
         .width('100%')
