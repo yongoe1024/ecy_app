@@ -2,7 +2,8 @@ import { EnvironmentManager } from '../EnvironmentManager';
 import { GlobalState } from '../GlobalModel';
 import { RouteManager } from '../../router/RouteManager';
 import { UserManager } from '../../user/UserManager';
-import { TokenInfo } from '../../user/UserModel';
+import { TokenInfo, UserInfo } from '../../user/UserModel';
+import { Toast } from '../../../utils/Toast';
 import { AppStorageV2 } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { envConfig } from '../EnvConfig';
@@ -25,43 +26,114 @@ export struct DebugPage {
   @Local globalState: GlobalState = AppStorageV2.connect(GlobalState, () => new GlobalState())!
   // 当前环境快照（页面存续期间环境变更会重启应用，无需响应式跟踪）
   private current: string = EnvironmentManager.getInstance().getEnv()
-  // 登录态快照（页面存续期间无法登录/登出，无需响应式跟踪）
-  @Local loggedIn: boolean = false
-  @Local tokenText: string = '未登录'
-  @Local userText: string = '加载中...'
+  // 会话快照（页面存续期间无法登录/登出，无需响应式跟踪）
+  @Local tokenInfo?: TokenInfo
+  @Local userInfo?: UserInfo
+  @Local loading: boolean = false
 
   aboutToAppear(): void {
-    this.refreshTokenText()
+    this.tokenInfo = UserManager.getInstance().getToken()
     void this.loadUserInfo(false)
   }
 
-  /** 只读展示当前 Token（内存缓存，冷启动自偏好恢复） */
-  private refreshTokenText(): void {
-    const token: TokenInfo | undefined = UserManager.getInstance().getToken()
-    this.loggedIn = token !== undefined
-    this.tokenText = token
-      ?
-      `accessToken: ${token.accessToken}\nrefreshToken: ${token.refreshToken}\nexpireTime: ${token.expireTime}\nrefreshExpireTime: ${token.refreshExpireTime}`
-      : '未登录'
-  }
-
   /**
-   * 加载用户信息：缓存优先；未登录显示未登录，接口失败显示获取失败（占位域名下属预期）。
+   * 加载用户信息：缓存优先，强刷走 refreshUserInfo；未登录不发请求。
+   * 失败 Toast 提示（占位域名下属预期）。
    */
   private async loadUserInfo(force: boolean): Promise<void> {
+    if (!this.tokenInfo) {
+      return
+    }
+    this.loading = true
     try {
       if (force) {
         await UserManager.getInstance().refreshUserInfo()
       }
-      const info = await UserManager.getInstance().getUserInfo()
-      this.userText = info
-        ? `id: ${info.id ?? '-'}\nname: ${info.name ?? '-'}\nphone: ${info.phone ?? '-'}`
-        : '未登录'
+      this.userInfo = await UserManager.getInstance().getUserInfo()
     } catch (e) {
       hilog.warn(DOMAIN, TAG, `loadUserInfo ：${e?.message}`);
-      this.userText = '获取失败（未登录或接口不可用）'
+      Toast.show('用户信息获取失败')
+    } finally {
+      this.loading = false
     }
   }
+
+  /** 会话板短值行：左侧定宽标签 + 右侧自适应值 */
+  @Builder
+  infoRow(label: string, value?: string) {
+    Row({ space: 12 }) {
+      Text(label)
+        .fontSize(13)
+        .fontColor('#8F95A7')
+        .width(96)
+      Text(value ? value : '-')
+        .fontSize(13)
+        .fontColor('#172033')
+        .layoutWeight(1)
+    }
+    .width('100%')
+    .padding({ top: 9, bottom: 9 })
+  }
+
+  /** 会话板长值行（token 类）：值独占一行换行展示，长按可复制 */
+  @Builder
+  tokenRow(label: string, value?: string) {
+    Column({ space: 6 }) {
+      Text(label)
+        .fontSize(13)
+        .fontColor('#8F95A7')
+        .width('100%')
+      Text(value ? value : '-')
+        .fontSize(12)
+        .fontColor('#172033')
+        .copyOption(CopyOptions.InApp)
+        .width('100%')
+    }
+    .width('100%')
+    .padding({ top: 9, bottom: 9 })
+    .border({ width: { bottom: 0.5 }, color: '#F0F1F5' })
+  }
+
+
+  /** 会话与 token 展示板（调试用：核对登录态/身份/令牌，不对外发布） */
+  @Builder
+  sessionBoard() {
+    Column({ space: 2 }) {
+      Text('用户信息（会话）')
+        .fontSize(14)
+        .fontWeight(FontWeight.Medium)
+        .fontColor('#172033')
+        .width('100%')
+        .padding({ bottom: 6 })
+
+      this.infoRow('登录状态', this.tokenInfo ? '已登录' : '未登录')
+      this.infoRow('userId', this.userInfo?.id)
+      this.infoRow('手机号', this.userInfo?.phone)
+      this.infoRow('昵称', this.userInfo?.name)
+      this.infoRow('expireTime', `${this.tokenInfo?.expireTime ?? ''}`)
+      this.infoRow('refreshExpireTime', `${this.tokenInfo?.refreshExpireTime ?? ''}`)
+      this.tokenRow('头像 avatar', this.userInfo?.avatar)
+      this.tokenRow('accessToken', this.tokenInfo?.accessToken)
+      this.tokenRow('refreshToken', this.tokenInfo?.refreshToken)
+
+      Button(this.loading ? '刷新中...' : '刷新用户信息')
+        .fontSize(13)
+        .backgroundColor('#F0F5FF')
+        .fontColor('#2b6aff')
+        .borderRadius(10)
+        .width('100%')
+        .margin({ top: 10 })
+        .enabled(!this.loading)
+        .onClick(() => {
+          void this.loadUserInfo(true)
+        })
+    }
+    .padding(16)
+    .width('100%')
+    .backgroundColor('#FFFFFF')
+    .borderRadius(12)
+  }
+
 
   @Builder
   navBar() {
@@ -121,58 +193,6 @@ export struct DebugPage {
     })
   }
 
-  @Builder
-  userTokenCard() {
-    Column({ space: 10 }) {
-      Text('用户信息与 Token')
-        .fontSize(15)
-        .fontWeight(FontWeight.Medium)
-        .fontColor('#172033')
-        .width('100%')
-
-      Text(`登录状态：${this.loggedIn ? '已登录' : '未登录'}`)
-        .fontSize(12)
-        .fontColor(this.loggedIn ? '#2b6aff' : '#999999')
-        .width('100%')
-
-      Text('Token')
-        .fontSize(12)
-        .fontColor('#999999')
-        .width('100%')
-      // copyOption：调试时可直接长按复制 token 值
-      Text(this.tokenText)
-        .fontSize(12)
-        .fontColor('#475569')
-        .width('100%')
-        .copyOption(CopyOptions.InApp)
-
-      Text('用户信息')
-        .fontSize(12)
-        .fontColor('#999999')
-        .width('100%')
-      Text(this.userText)
-        .fontSize(12)
-        .fontColor('#475569')
-        .width('100%')
-        .copyOption(CopyOptions.InApp)
-
-      Button('刷新用户信息')
-        .fontSize(13)
-        .backgroundColor('#F0F5FF')
-        .fontColor('#2b6aff')
-        .borderRadius(10)
-        .width('100%')
-        .onClick(() => {
-          void this.loadUserInfo(true)
-        })
-    }
-    .alignItems(HorizontalAlign.Start)
-    .padding(16)
-    .width('100%')
-    .backgroundColor('#FFFFFF')
-    .borderRadius(12)
-  }
-
   build() {
     NavDestination() {
       // 顶部避让：最外层统一 padding（状态栏高度取自 GlobalState.topRectHeight）
@@ -188,7 +208,7 @@ export struct DebugPage {
             ForEach(ENV_OPTIONS, (env: string) => {
               this.envItem(env)
             })
-            this.userTokenCard()
+            this.sessionBoard()
           }
           .padding(16)
           .width('100%')
