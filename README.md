@@ -47,7 +47,7 @@ Manager，可直接作为新项目的起点。
 ```ts
 import { NetManager } from 'common'
 
-// request：只要服务器有响应就 resolve，业务成功与否看 res.code；仅网络/超时走 catch
+// request：HTTP 2xx 即 resolve（业务码非 200 仍 resolve）；4xx/5xx、网络错误、超时走 catch
 try {
   const res = await NetManager.getInstance().request<UserInfo>({
     method: 'get',
@@ -60,9 +60,9 @@ try {
   // 网络错误 / 超时
 }
 
-// 文件上传 / 下载
-await NetManager.getInstance().upload(context, { url: '/upload', filePath })
-await NetManager.getInstance().download(context, { url, filePath })
+// 文件上传 / 下载（config 可带 headers / timeout / method 等；download 的 filePath 须在 cacheDir 内）
+await NetManager.getInstance().upload(context, filePath, { url: '/upload' })
+await NetManager.getInstance().download(context, filePath, { url })
 ```
 
 > 已登录时，Token 会被请求拦截器自动加到 `Authorization` 头，无需手动设置。
@@ -226,7 +226,7 @@ Column().width(Breakpoint.ofWidth(
 | 写变更（同步）   | `putSync` · `deleteSync`                        | **抛异常**                                       | `try / catch`            |
 | 会话登出      | `logout`                                          | 不抛：内存先清并通知；持久化删除失败仅记日志（残留 token 下次冷启动恢复）        | 直接调用                     |
 | 环境切换      | `setEnv`                                         | 不抛：失败记日志，重启失败 Toast 提示手动重启                    | 直接调用                     |
-| 网络        | `request` · `upload` · `download`                | 有响应即 resolve（即使 `code !== 200`）；仅网络/超时 reject | 先查 `res.code`，再 `catch`  |
+| 网络        | `request` · `upload` · `download`                | HTTP 2xx 即 resolve（业务码非 200 仍 resolve）；4xx/5xx、网络错误、超时 reject | 先查 `res.code`，再 `catch`  |
 | 领域异步      | `login` · `LocationManager.*` · `MediaManager.*` | 自定义失败 `reject(Error)`；底层 SDK 错误透传 `BusinessError` | `try/catch` 或 `.catch`   |
 | 状态查询（异步）  | `getUserInfo` · `refreshUserInfo`                | `undefined` ＝ 未登录；出错才 reject                  | 先判 `undefined`，再 `catch` |
 | 路由（UI 命令） | `push` · `pop*`                                  | 只记日志 / Toast，**不抛**                           | 直接调用                     |
