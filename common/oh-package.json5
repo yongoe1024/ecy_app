@@ -1,7 +1,7 @@
 {
   "name": "common",
   "version": "1.0.0",
-  "description": "Please describe the basic information.",
+  "description": "通用能力 HAR：网络、存储、用户、路由、环境、权限、定位、媒体等 Manager。",
   "main": "Index.ets",
   "author": "",
   "license": "Apache-2.0",

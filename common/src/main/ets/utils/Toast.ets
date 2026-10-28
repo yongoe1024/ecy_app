@@ -1,15 +1,12 @@
 import { AppStorageV2 } from "@kit.ArkUI";
-import { GlobalState } from "../functions";
+import { GlobalState } from '../functions/environment/GlobalModel';
 import { hilog } from "@kit.PerformanceAnalysisKit";
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'Toast';
 
 /**
- * 全局 Toast（替代三方 IBestToast）。
- *
- * 非组件环境（Manager/工具类）拿不到 UIContext，经 EntryAbility 注入的
- * windowStage 取主窗口 UIContext 弹出；windowStage 未就绪时静默跳过。
+ * 全局 Toast
  */
 export class Toast {
   static show(message: string): void {

@@ -13,7 +13,7 @@ export interface TimeBuildOptions {
   triggerTime?: number
 }
 
-/** 统一的计时引擎，负责专注正计时、休息倒计时以及每秒回调分发。 */
+/** 统一的计时引擎：正计时/倒计时，按 triggerTime 间隔回调。 */
 export class TimeHelper {
   private triggerTime: number = DEFAULT_TRIGGER_TIME_MS
   private timerId: number = -1;
@@ -27,7 +27,7 @@ export class TimeHelper {
   private onTick?: Callback<number>
   private onReachLimit?: Callback<void>
 
-  /** 把毫秒格式化为 mm:ss，负值按 0 处理。供计时/媒体等场景复用。 */
+  /** 把毫秒格式化为 mm:ss，负值按 0 处理 */
   static formatClock(ms: number): string {
     const totalSeconds = ms > 0 ? Math.floor(ms / 1000) : 0
     const minute = Math.floor(totalSeconds / 60).toString().padStart(2, '0')
@@ -53,7 +53,7 @@ export class TimeHelper {
   private constructor() {
   }
 
-  /** 获取当前计时秒数，正计时返回已用时，倒计时返回剩余时长。 */
+  /** 获取当前计时值（毫秒），正计时返回已用时，倒计时返回剩余时长。 */
   getTimeMs(): number {
     return this.timeMs
   }
@@ -62,7 +62,7 @@ export class TimeHelper {
     this.timeMs = value;
   }
 
-  /** 从头启动一个计时阶段，并根据当前模式初始化秒数。 */
+  /** 从头启动一个计时阶段，并根据当前模式初始化计时值。 */
   start(): void {
     this.stop();
     this.timeMs = this.type === TimerType.COUNT_UP ? 0 : this.maxTimeMs;
@@ -70,7 +70,7 @@ export class TimeHelper {
     this.startInterval();
   }
 
-  /** 触发一次时间回调，把当前秒数同步给页面或业务层。 */
+  /** 触发一次时间回调，把当前计时值（毫秒）同步给页面或业务层。 */
   private tick(): void {
     this.onTick?.(this.timeMs);
   }
@@ -82,7 +82,8 @@ export class TimeHelper {
     this.timerId = setInterval(() => {
       const elapsed = Date.now() - this.startTimestamp;
       if (this.type === TimerType.COUNT_UP) {
-        this.timeMs = this.baseTimeMs + elapsed;
+        // 向下取整到 triggerTime 的整数倍，与倒计时分支对称（onTick 恒得整数倍值）
+        this.timeMs = this.baseTimeMs + Math.floor(elapsed / this.triggerTime) * this.triggerTime;
         if (this.maxTimeMs > 0 && this.timeMs >= this.maxTimeMs) {
           this.timeMs = this.maxTimeMs;
           this.tick();
@@ -100,16 +101,14 @@ export class TimeHelper {
           this.onReachLimit?.();
           return;
         }
-        // 向上取整到 triggerTime 的整数倍：让相邻 tick 的剩余值正好相差一个 triggerTime，
-        // 避免首个 tick 因 setInterval 轻微滞后（如 1016ms）使 remaining=28984、被 formatClock 的 floor 显示成 28 而跳过 29。
-        // 每次都按真实 elapsed 重算，不累积漂移。
+        // 向上取整到 triggerTime 的整数倍：让相邻 tick 的剩余值正好相差一个 triggerTime
         this.timeMs = Math.ceil(remaining / this.triggerTime) * this.triggerTime;
         this.tick();
       }
     }, this.triggerTime) as number;
   }
 
-  /** 停止当前计时任务，但保留当前秒数以便后续恢复。 */
+  /** 停止当前计时任务，但保留当前计时值以便后续恢复。 */
   stop(): void {
     if (this.timerId >= 0) {
       clearInterval(this.timerId);
@@ -117,7 +116,7 @@ export class TimeHelper {
     }
   }
 
-  /** 按当前模式从上次暂停的秒数继续计时（正计时累加、倒计时递减）。 */
+  /** 按当前模式从上次暂停的计时值继续计时（正计时累加、倒计时递减）。 */
   resume(): void {
     this.stop();
     this.tick();

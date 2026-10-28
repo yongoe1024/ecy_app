@@ -9,3 +9,5 @@ export * from './TimeHelper'
 export * from './Breakpoint'
 
 export * from './Toast'
+
+export * from './AppInfoUtils'

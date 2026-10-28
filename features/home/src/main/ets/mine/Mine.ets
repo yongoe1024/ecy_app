@@ -18,6 +18,7 @@ export struct Mine {
   aboutToAppear(): void {
     this.destroyed = false
     this.registerUserListener()
+    // 只恢复本地登录态，不拉用户信息（避免冷启动/切 Tab 即发网络请求）；真实昵称在登录回调 loadUserState(true) 中刷新
     void this.loadUserState(false)
   }
 
@@ -56,7 +57,7 @@ export struct Mine {
     }
     this.isLoggedIn = true
     this.userName = '已登录用户'
-    this.loginTip = `Token 已保存：${token.substring(0, 8)}...`
+    this.loginTip = `Token 已保存：${token.accessToken.substring(0, 8)}...`
     if (!readCachedInfo) {
       return
     }
@@ -77,13 +78,8 @@ export struct Mine {
   }
 
   async logout(): Promise<void> {
-    try {
-      await UserManager.getInstance().logout()
-      Toast.show('已退出登录')
-    } catch (e) {
-      hilog.error(DOMAIN, TAG, `logout ：${e?.message}`);
-      Toast.show('退出登录失败')
-    }
+    await UserManager.getInstance().logout()
+    Toast.show('已退出登录')
   }
 
   @Builder

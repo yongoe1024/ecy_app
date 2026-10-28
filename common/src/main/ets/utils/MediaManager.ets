@@ -109,8 +109,7 @@ export class MediaManager {
 
   /**
    * 初始化 并准备播放（prepare/play 由状态事件自动续接）
-   * 链路进行中调用时仅记录最新请求，当前链结束后自动续播
-   * @throws BusinessError
+   * 链路失败仅记日志，不 reject；链路进行中调用时仅记录最新请求，当前链结束后自动续播
    */
   async setAndPlay(index: number, config?: MediaConfig): Promise<void> {
     if (this.chaining) {
@@ -142,7 +141,7 @@ export class MediaManager {
       }
       await this.setUrl(this.state.mediaList[this.state.index])
     } catch (e) {
-      hilog.error(DOMAIN, TAG, `setAndPlay ：${e.code} ${e.message}`);
+      hilog.error(DOMAIN, TAG, `runChain ：${e.code} ${e.message}`);
       this.finishChain()
     }
   }
@@ -176,6 +175,10 @@ export class MediaManager {
    * @throws BusinessError
    */
   async play(): Promise<void> {
+    // 链路进行中不下发：链路终点会自动起播，意图已覆盖
+    if (this.chaining) {
+      return
+    }
     if (!this.state.isPlay) {
       await this.avPlayer.play()
     }
@@ -186,6 +189,12 @@ export class MediaManager {
    * @throws BusinessError
    */
   async pause(): Promise<void> {
+    // 链路进行中不下发：reset 迁移期（isPlay 尚未清零的窗口）pause 会撞非法状态（5400102）；
+    // 链路终点自动起播，暂停意图不挂起（新资源下旧意图无明确指向）
+    if (this.chaining) {
+      hilog.warn(DOMAIN, TAG, 'pause ignored: chaining');
+      return
+    }
     if (this.state.isPlay) {
       await this.avPlayer.pause()
     }
@@ -196,6 +205,11 @@ export class MediaManager {
    * @throws BusinessError
    */
   seek(time: number): void {
+    // 链路进行中不下发：正在切换资源，旧资源进度对新资源无意义，且 idle/initialized 态 seek 非法（5400102）
+    if (this.chaining) {
+      hilog.warn(DOMAIN, TAG, 'seek ignored: chaining');
+      return
+    }
     this.avPlayer.seek(time)
   }
 
@@ -294,8 +308,8 @@ export class MediaManager {
     // error 必须在 idle 态（设置资源前）注册
     this.avPlayer.on('error', (e: BusinessError) => {
       hilog.error(DOMAIN, TAG, `error ：${e.code} ${e.message}`);
-      this.avPlayer.reset().catch(() => {
-        hilog.error(DOMAIN, TAG, `error：${e.code} ${e.message}`);
+      this.avPlayer.reset().catch((resetErr: BusinessError) => {
+        hilog.error(DOMAIN, TAG, `reset ：${resetErr.code} ${resetErr.message}`);
       }).then(() => {
         // 错误恢复完成后终结当前链（如 set url 失败走 error 事件而非抛错，链路只能在此收尾）
         this.finishChain()
@@ -314,15 +328,6 @@ export class MediaManager {
     // seek 完成
     this.avPlayer.on('seekDone', (time: number) => {
       this.onChange?.(this.state)
-    });
-    // 倍速设置完成
-    this.avPlayer.on('speedDone', (speed: number) => {
-    });
-    // 音量变化
-    this.avPlayer.on('volumeChange', (vol: number) => {
-    });
-    // 网络缓冲进度
-    this.avPlayer.on('bufferingUpdate', (infoType: media.BufferingInfoType, value: number) => {
     });
     // 音频焦点切换（来电、其它媒体抢占）
     this.avPlayer.on('audioInterrupt', (info: audio.InterruptEvent) => {

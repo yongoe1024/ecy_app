@@ -18,8 +18,7 @@ const DOMAIN: number = 0x0000;
 const TAG: string = 'NetManager';
 
 /**
- * 网络请求管理器：axios 封装（token 头注入、调试日志脱敏、上传/下载）。
- * 业务契约见 request 注释。
+ * 网络请求管理器：axios 封装、上传/下载
  */
 export class NetManager {
   private static instance: NetManager
@@ -35,15 +34,13 @@ export class NetManager {
     this.axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
       const token = UserManager.getInstance().getToken()
       if (token) {
-        config.headers['Authorization'] = token
+        config.headers['Authorization'] = token.accessToken
       }
       this.logRequest(config)
       return config;
     });
-    // 响应拦截器：剥壳返回业务体
-    // 返回剥壳后的业务体（ResponseModel）而非 AxiosResponse
+    // 响应拦截器：剥壳返回业务体（ResponseModel）而非 AxiosResponse
     this.axiosInstance.interceptors.response.use((response: AxiosResponse) => {
-      // 返回剥壳后的业务体（ResponseModel）而非 AxiosResponse
       this.logResponse(response)
       return response.data
     }, (error: AxiosError) => {
@@ -61,11 +58,7 @@ export class NetManager {
   }
 
   /**
-   * 自定义请求。
-   * 约定（传输层）：只要服务器有响应就 resolve（**即使业务码 res.code !== 200**）；
-   * 仅网络错误 / 超时走 catch。因此调用方必须先检查 res.code，再消费 res.data。
-   * @param config axios配置
-   * @returns ResponseModel（resolve 不代表业务成功）
+   * 自定义请求：只要服务器有响应就 resolve（**即使业务码 res.code !== 200**）。
    */
   request<T = Object>(config: AxiosRequestConfig): Promise<ResponseModel<T>> {
     return this.axiosInstance.request<ResponseModel<T>, ResponseModel<T>>(config)
@@ -77,27 +70,10 @@ export class NetManager {
     }
     hilog.debug(DOMAIN, TAG, `request | URL: ${config.url}`);
     hilog.debug(DOMAIN, TAG, `request | Method: ${config.method?.toUpperCase()}`);
-    // 脱敏后再打印：避免 token 等敏感头泄漏到日志
-    hilog.debug(DOMAIN, TAG, `request | Headers: ${NetManager.maskHeaders(config.headers)}`);
+    // 原样打印，debug 日志中可见 Authorization
+    hilog.debug(DOMAIN, TAG, `request | Headers: ${config.headers}`);
     hilog.debug(DOMAIN, TAG, `request | Params: ${JSON.stringify(config.params)}`);
     hilog.debug(DOMAIN, TAG, `request | Body: ${JSON.stringify(config.data)}`);
-  }
-
-  /** 脱敏请求头：Authorization 以 *** 替代，避免 token 泄漏到日志 */
-  private static maskHeaders(headers: Object): string {
-    if (!headers) {
-      return '{}'
-    }
-    try {
-      const source = headers as Record<string, Object>
-      const masked: Record<string, Object> = {}
-      Object.keys(source).forEach((key: string) => {
-        masked[key] = key.toLowerCase() === 'authorization' ? '***' : source[key]
-      })
-      return JSON.stringify(masked)
-    } catch (e) {
-      return '[unserializable headers]'
-    }
   }
 
   private logResponse(response: AxiosResponse): void {

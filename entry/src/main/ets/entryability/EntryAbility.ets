@@ -3,6 +3,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AppStorageV2, window } from '@kit.ArkUI';
 import { EnvironmentManager, GlobalState, PreferenceManager, RouteManager, } from 'common';
 import { webview } from '@kit.ArkWeb';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'EntryAbility'
@@ -14,16 +15,16 @@ export default class EntryAbility extends UIAbility {
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     this.globalState.uiAbilityContext = this.context
-    // 深链不在热启动处理：冷启动时隐私未同意 / Navigation 未挂载，仅暂存，
-    // 由 Index 在隐私同意与挂载后消费（见 handleDeepLink 与 Index）
+    // 冷启动仅暂存深链：隐私未同意 / Navigation 未挂载，由 Index 在两者就绪后消费；
+    // 热启动在 onNewWant 直接处理
     this.globalState.wantParameters = want.parameters
     try {
       this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
     } catch (err) {
-      hilog.error(DOMAIN, TAG, 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
+      hilog.error(DOMAIN, TAG, `setColorMode ：${err?.code} ${err?.message}`);
     }
-    hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onCreate');
-    if (EnvironmentManager.getInstance().getEnv() !== 'PROD') {
+    hilog.info(DOMAIN, TAG, 'Ability onCreate');
+    if (EnvironmentManager.getInstance().getBuildEnv() !== 'PROD') {
       webview.WebviewController.setWebDebuggingAccess(true);
     }
   }
@@ -32,7 +33,7 @@ export default class EntryAbility extends UIAbility {
     this.globalState.wantParameters = want.parameters
     // 应用已在运行，Navigation 已挂载，可直接处理深链（内部仍校验隐私同意）
     this.handleDeepLink()
-    hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onNewWant');
+    hilog.info(DOMAIN, TAG, 'Ability onNewWant');
   }
 
   /**
@@ -46,31 +47,34 @@ export default class EntryAbility extends UIAbility {
         return
       }
     } catch (e) {
+      // 偏好读取异常按「未同意隐私」处理，跳过深链消费
+      hilog.error(DOMAIN, TAG, `hasSync agreePrivacy ：${e?.message}`);
       return
     }
-    if (RouteManager.getInstance().consumeWantDeepLink(this.globalState.wantParameters)) {
-      // 消费后清空，避免重复跳转
+    const params = this.globalState.wantParameters
+    if (params && params.toUrl) {
+      RouteManager.getInstance().pushDeepLink(String(params.toUrl))
       this.globalState.wantParameters = undefined
     }
   }
 
   onDestroy(): void {
-    hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onDestroy');
+    hilog.info(DOMAIN, TAG, 'Ability onDestroy');
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
-    hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onWindowStageCreate');
+    hilog.info(DOMAIN, TAG, 'Ability onWindowStageCreate');
     this.globalState.windowStage = windowStage
     // 启动只加载唯一 @Entry 页面；隐私门由 Index 内部条件渲染（未同意时整屏 PrivacyPage 组件）
     windowStage.loadContent('pages/Index', (err) => {
       if (err.code) {
-        hilog.error(DOMAIN, TAG, 'windowStage Failed to load the content. Cause: %{public}s', JSON.stringify(err));
+        hilog.error(DOMAIN, TAG, `loadContent ：${err?.code} ${err?.message}`);
         return;
       }
       try {
         this.updateWinInfo(windowStage.getMainWindowSync())
       } catch (error) {
-        hilog.error(DOMAIN, TAG, '获取windowStage失败');
+        hilog.error(DOMAIN, TAG, `获取主窗口失败：${error?.code} ${error?.message}`);
       }
     });
   }
@@ -86,15 +90,15 @@ export default class EntryAbility extends UIAbility {
     }
     this.mainWindow = undefined
     this.globalState.windowStage = undefined;
-    hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onWindowStageDestroy');
+    hilog.info(DOMAIN, TAG, 'Ability onWindowStageDestroy');
   }
 
   onForeground(): void {
-    hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onForeground');
+    hilog.info(DOMAIN, TAG, 'Ability onForeground');
   }
 
   onBackground(): void {
-    hilog.info(DOMAIN, TAG, '%{public}s', 'Ability onBackground');
+    hilog.info(DOMAIN, TAG, 'Ability onBackground');
   }
 
   /** 记录窗口尺寸与避让区，并注册窗口变化监听 */
@@ -104,8 +108,8 @@ export default class EntryAbility extends UIAbility {
       const uiContext = windowClass.getUIContext()
       // 全屏布局（内容延伸至状态栏/导航条下）
       windowClass.setWindowLayoutFullScreen(true)
-        .catch(() => {
-          hilog.error(DOMAIN, TAG, 'Failed to 设置窗口全屏');
+        .catch((e: BusinessError) => {
+          hilog.error(DOMAIN, TAG, `setWindowLayoutFullScreen ：${e.code} ${e.message}`);
         })
       // 获取避让区域
       const statusBar = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)

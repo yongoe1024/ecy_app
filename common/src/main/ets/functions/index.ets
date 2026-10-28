@@ -1,6 +1,3 @@
-// error
-export * from './AppError'
-
 // environment
 export * from './environment/GlobalModel'
 
@@ -27,7 +24,7 @@ export * from './user/UserCallback'
 
 export * from './user/UserManager'
 
-export * from './user/UserInfo'
+export * from './user/UserModel'
 
 // webview
 export * from './webview/components/WebComponent'

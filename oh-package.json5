@@ -1,6 +1,6 @@
 {
   "modelVersion": "26.0.0",
-  "description": "Please describe the basic information.",
+  "description": "基于 HarmonyOS / ArkTS 的多模块脚手架。",
   "dependencies": {
     "@ohos/axios": "^2.2.15"
   },

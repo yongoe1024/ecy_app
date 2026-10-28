@@ -35,7 +35,7 @@ export struct HomeMediaCard {
       // 创建期间组件可能已销毁：立即释放，避免 avPlayer 泄漏
       if (this.destroyed) {
         manager.release().catch((e: BusinessError) => {
-          hilog.warn(DOMAIN, TAG, `clear ：${e?.code} ${e?.message}`);
+          hilog.warn(DOMAIN, TAG, `release ：${e?.code} ${e?.message}`);
         })
         return
       }
@@ -53,9 +53,9 @@ export struct HomeMediaCard {
 
   aboutToDisappear(): void {
     this.destroyed = true
-    // clear() 失败不影响销毁流程，但需记录而非用空 catch 静默吞掉
+    // release() 失败不影响销毁流程，但需记录而非用空 catch 静默吞掉
     this.mediaManager?.release().catch((e: BusinessError) => {
-      hilog.warn(DOMAIN, TAG, `clear ：${e?.code} ${e?.message}`);
+      hilog.warn(DOMAIN, TAG, `release ：${e?.code} ${e?.message}`);
     })
     this.mediaManager = undefined
     this.mediaReady = false
@@ -76,6 +76,7 @@ export struct HomeMediaCard {
           // setAndPlay 内部一路执行到播放命令被接受，无需再单独调 play()
           await this.mediaManager?.setAndPlay(0)
         } catch (e) {
+          hilog.error(DOMAIN, TAG, `setAndPlay ：${e?.message}`);
           Toast.show('音频加载失败')
         }
       }).backgroundColor('#111827')
@@ -83,6 +84,7 @@ export struct HomeMediaCard {
         try {
           await this.mediaManager?.pause()
         } catch (e) {
+          hilog.error(DOMAIN, TAG, `pause ：${e?.message}`);
           Toast.show('暂停失败')
         }
       }).backgroundColor('#F59E0B')
@@ -90,6 +92,7 @@ export struct HomeMediaCard {
         try {
           await this.mediaManager?.play()
         } catch (e) {
+          hilog.error(DOMAIN, TAG, `play ：${e?.message}`);
           Toast.show('播放失败')
         }
       }).backgroundColor('#2563EB')

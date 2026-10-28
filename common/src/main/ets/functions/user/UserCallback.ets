@@ -1,4 +1,4 @@
-import { UserInfo } from './UserInfo'
+import { UserInfo } from './UserModel'
 
 export interface UserCallback {
   /**

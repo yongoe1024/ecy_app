@@ -1,4 +1,5 @@
-import { PreferenceManager, Toast } from '../../utils';
+import { PreferenceManager } from '../../utils/PreferenceManager';
+import { Toast } from '../../utils/Toast';
 import { GlobalState } from './GlobalModel';
 import { AppStorageV2 } from '@kit.ArkUI';
 import { Want } from '@kit.AbilityKit';
@@ -20,9 +21,9 @@ export class EnvironmentManager {
 
   private constructor() {
     try {
-      this.env = PreferenceManager.getSync('env', 'DEV') as string
+      this.env = PreferenceManager.getSync('env', 'DEV', false) as string
     } catch (e) {
-      hilog.error(DOMAIN, TAG, `getInstance ：${e.code} ${e.message}`);
+      hilog.error(DOMAIN, TAG, `getInstance ：${e?.message}`);
     }
   }
 
@@ -52,7 +53,7 @@ export class EnvironmentManager {
 
   /**
    * 切换环境并重启应用使其生效。
-   * 约定：写变更不静默吞错——失败时抛出，调用方需感知。
+   * 重启失败记日志并 Toast 提示手动重启。
    */
   setEnv(e: string): void {
     if (this.buildEnv === 'PROD') {
@@ -61,12 +62,12 @@ export class EnvironmentManager {
     if (this.env === e) {
       return
     }
-    try {
-      PreferenceManager.putSync('env', e)
-    } catch (e) {
-      hilog.error(DOMAIN, TAG, `setEnv ：${e.code} ${e.message}`);
-    }
     this.env = e
+    try {
+      PreferenceManager.putSync('env', e, false)
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `setEnv ${e} ：${err?.message}`);
+    }
     this.restartApp()
   }
 
@@ -75,19 +76,21 @@ export class EnvironmentManager {
    */
   private restartApp(): void {
     const applicationContext = this.globalState.uiAbilityContext?.getApplicationContext();
-    if (applicationContext) {
-      // 包名
-      const want: Want = {
-        bundleName: this.globalState.uiAbilityContext?.abilityInfo.bundleName,
-        abilityName: this.globalState.uiAbilityContext?.abilityInfo.name
-      };
-      try {
-        applicationContext.restartApp(want);
-      } catch (e) {
-        hilog.error(DOMAIN, TAG, `restartApp ：${e.code} ${e.message}`);
-      }
+    if (!applicationContext) {
+      Toast.show('需手动重启')
+      return
     }
-    Toast.show('需手动重启')
+    // 包名
+    const want: Want = {
+      bundleName: this.globalState.uiAbilityContext?.abilityInfo.bundleName,
+      abilityName: this.globalState.uiAbilityContext?.abilityInfo.name
+    };
+    try {
+      applicationContext.restartApp(want);
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, `restartApp ：${e.code} ${e.message}`);
+      Toast.show('需手动重启')
+    }
   }
 
   getEnvConfig(): AppConfig {

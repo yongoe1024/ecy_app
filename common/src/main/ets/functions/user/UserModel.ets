@@ -7,3 +7,10 @@ export interface UserInfo {
   name?: string
   avatar?: string
 }
+
+export interface TokenInfo {
+  accessToken: string
+  refreshToken: string
+  expireTime: number
+  refreshExpireTime: number
+}

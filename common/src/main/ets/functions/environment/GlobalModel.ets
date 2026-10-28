@@ -1,7 +1,7 @@
 import { window } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
 
-/** 全局窗口/设备状态与主 Ability 上下文：EntryAbility 写入，UI 层经 AppStorageV2.connect 读取 */
+/** 全局窗口/设备状态与主 Ability 上下文：AppStorageV2.connect 读取 */
 @ObservedV2
 export class GlobalState {
   // 屏幕宽度

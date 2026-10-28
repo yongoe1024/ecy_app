@@ -1,4 +1,4 @@
-import { Toast } from '../../utils';
+import { Toast } from '../../utils/Toast';
 import { RouterParams } from './RouterModel';
 import { RouteTable } from './RouteTable';
 import { UserManager } from '../user/UserManager';
@@ -22,10 +22,6 @@ interface LoginRouteParams {
 
 /**
  * 路由管理类。
- *
- * 错误处理约定（UI 命令层）：所有导航方法均为 best-effort 的 void 命令，
- * **永不 throw / reject**——失败时仅记录日志，必要时以 Toast 提示用户（如目标页不存在）。
- * 调用方无需 try/catch；如需在出栈后拿返回值，用 RouterParams.onPop 回调。
  */
 export class RouteManager {
   private static instance: RouteManager
@@ -43,8 +39,7 @@ export class RouteManager {
   }
 
   /**
-   * 当前栈顶页面名（Navigation 栈自底向上，末位即当前页）。
-   * Navigation 首页（如 entry 的 Index）不压栈，栈空时返回 undefined。
+   * 当前栈顶页面名
    */
   public getCurrentPageName(): string | undefined {
     const names = this.pageStack?.getAllPathName()
@@ -76,9 +71,8 @@ export class RouteManager {
     this.pageStack?.popToIndex(0, animated)
   }
 
-
   /**
-   * 处理外部深链跳转：仅允许应用内部 scheme，避免被外部诱导打开任意网页（开放重定向）。
+   * 处理外部深链跳转：仅允许应用内部 scheme。
    * @param url want 携带的目标地址
    */
   public pushDeepLink(url: string): void {
@@ -86,40 +80,7 @@ export class RouteManager {
       hilog.warn(DOMAIN, TAG, `拒绝非法深链：${url}`);
       return
     }
-    // 深链可能通过 ?src= 携带外链（如 ecy://common/web?src=...），经内部 WebView 路由打开任意网页。
-    // 默认不允许深链打开外链，避免开放重定向 / 钓鱼；如需放开，在 isDeepLinkSrcSafe 内加 host 白名单。
-    if (!RouteManager.isDeepLinkSrcSafe(url)) {
-      hilog.warn(DOMAIN, TAG, `拒绝深链携带的外链 src：${url}`);
-      return
-    }
     this.push({ url })
-  }
-
-  /**
-   * 消费主 Ability want 携带的深链（toUrl 参数）：存在则按内部 scheme 跳转。
-   * 隐私门校验由调用方保证：EntryAbility 热启动查偏好，Index 由渲染分支天然保证。
-   * @returns 是否消费了深链（true 时调用方应清空 wantParameters，防止重复跳转）
-   */
-  public consumeWantDeepLink(params?: Record<string, Object>): boolean {
-    if (params && params.toUrl) {
-      this.pushDeepLink(String(params.toUrl))
-      return true
-    }
-    return false
-  }
-
-  /** 深链不得携带 http(s) 外链 src，防止经内部 WebView 路由打开任意网页 */
-  private static isDeepLinkSrcSafe(url: string): boolean {
-    try {
-      const u = new uri.URI(url)
-      if (!u.getQueryNames().includes('src')) {
-        return true
-      }
-      const src = u.getQueryValue('src')
-      return !src || !src.startsWith('http')
-    } catch (e) {
-      return false
-    }
   }
 
   /** 跳转；url 为 http(s) 链接时经 COMMON_WEB 打开；needLogin 未登录时先经登录页 */
@@ -142,7 +103,7 @@ export class RouteManager {
             onPop: options.onPop
           })
         }
-      }, true)
+      }, options.animated)
         .catch((e: BusinessError) => {
           hilog.error(DOMAIN, TAG, `push login ：${e.code} ${e.message}`);
           Toast.show('登录页面不存在')

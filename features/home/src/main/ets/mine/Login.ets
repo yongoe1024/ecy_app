@@ -1,4 +1,5 @@
-import { RouteManager, Toast, UserManager } from 'common';
+import { GlobalState, RouteManager, Toast, UserManager } from 'common';
+import { AppStorageV2 } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN: number = 0x0000;
@@ -21,11 +22,12 @@ export function LoginPageBuilder() {
 }
 
 /**
- * 登录演示页：覆盖 UserManager.login 的调用与登录态回调。
+ * 登录演示页：覆盖 UserManager.login 调用与登录后 popResult 回传目标页。
  * 注：需配合真实后端 login 接口，未联通后端时会走失败提示。
  */
 @ComponentV2
 export struct LoginPage {
+  @Local globalState: GlobalState = AppStorageV2.connect(GlobalState)!
   @Local phone: string = ''
   @Local code: string = ''
   @Local loading: boolean = false
@@ -54,7 +56,7 @@ export struct LoginPage {
         RouteManager.getInstance().pop()
       }
     } catch (e) {
-      hilog.error(DOMAIN, TAG, `login ：${e?.code} ${e?.message}`);
+      hilog.error(DOMAIN, TAG, `login ：${e?.message}`);
       Toast.show('登录失败，请检查网络或账号')
     } finally {
       this.loading = false
@@ -75,6 +77,8 @@ export struct LoginPage {
         .fontSize(17)
         .fontWeight(FontWeight.Medium)
         .layoutWeight(1)
+      // 占位平衡左侧返回按钮宽度，保证标题居中
+      Text('').width(44)
     }
     .height(48)
     .width('100%')
@@ -112,6 +116,8 @@ export struct LoginPage {
       }
       .width('100%')
       .height('100%')
+      // 顶部避让只在本层做一次（状态栏高度取自 GlobalState.topRectHeight），navBar 不再叠加
+      .padding({ top: this.globalState.topRectHeight })
     }
     .hideTitleBar(true)
     .onReady((context: NavDestinationContext) => {

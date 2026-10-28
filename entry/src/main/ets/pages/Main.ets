@@ -9,7 +9,7 @@ export function MainBuilder() {
 
 /**
  * 路由表入口（ecy://entry/main，见 entry 的 router_map.json）：
- * 深链/跳转场景将 Main 作为 NavDestination 压栈，内容复用 MainTabs。
+ * Navigation 的首页目的地（Index 内容区为空，首屏由本页渲染），深链/跳转时也作为 NavDestination 压栈复用。
  */
 @ComponentV2
 struct Main {

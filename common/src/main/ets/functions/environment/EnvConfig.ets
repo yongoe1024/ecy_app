@@ -1,6 +1,6 @@
 export const envConfig: Record<string, AppConfig> = {
   'DEV': {
-    //本机IP http://10.0.2.2:8080
+    //本机映射IP http://10.0.2.2:8080
     baseUrl: 'https://api-dev.xxx.com',
   },
   'TEST': {

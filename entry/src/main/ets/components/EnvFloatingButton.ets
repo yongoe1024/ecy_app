@@ -7,7 +7,7 @@ const EDGE_MARGIN = 8
 
 /**
  * 环境切换悬浮球：可拖动的圆形按钮，点开调试页（RouteTable.COMMON_DEBUG）。
- * 仅非 PRD 环境挂载（生产包不出现调试入口，由 Index 判定）。
+ * 仅非 PROD 构建包挂载（Index 按 getBuildEnv 判定；运行时切到 PROD 不隐藏，便于切回）。
  * 轻点 = 打开页面；拖动 = PanGesture 更新位置（拖动抑制 click，二者不冲突）。
  */
 @ComponentV2

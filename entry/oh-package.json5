@@ -1,10 +1,10 @@
 {
   "name": "entry",
   "version": "1.0.0",
-  "description": "Please describe the basic information.",
+  "description": "入口模块：Ability、隐私门与主页面壳。",
   "main": "",
-  "author": "",
-  "license": "",
+  "author": "yongoe",
+  "license": "Apache-2.0",
   "dependencies": {
     "common": "file:../common",
     "home": "file:../features/home"

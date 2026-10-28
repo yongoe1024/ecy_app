@@ -1,7 +1,5 @@
 /**
- * 统一返回类
- * 默认 T 用 Object（而非 ESObject）：未显式指定泛型时也能通过 arkts-no-any-unknown 严格校验。
- * 需要具体结构时显式传入，如 request<UserInfo>(...)。
+ * 统一响应结构
  */
 export interface ResponseModel<T = Object> {
   message: string

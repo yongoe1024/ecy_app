@@ -1,6 +1,7 @@
 import { GlobalState, PreferenceManager, Toast } from 'common';
 import { AppStorageV2 } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0000;
@@ -200,11 +201,10 @@ export struct PrivacyPage {
               .onClick(() => {
                 try {
                   PreferenceManager.putSync('agreePrivacy', true)
-                  // 响应式切换主界面：无页面跳转（router.replace 不跨平台、loadContent 在安卓
-                  // 存在适配不确定性），条件渲染由引擎保证三端一致
+                  // 响应式切换主界面：无页面跳转，条件渲染状态连续
                   this.onAgreed?.()
                 } catch (e) {
-                  hilog.error(DOMAIN, TAG, `onBtnClick ：${e.code} ${e.message}`);
+                  hilog.error(DOMAIN, TAG, `onBtnClick ：${e?.message}`);
                   Toast.show('保存失败，请重试')
                 }
               })
@@ -217,8 +217,8 @@ export struct PrivacyPage {
               .borderRadius(22)
               .onClick(() => {
                 const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-                context.terminateSelf().catch(() => {
-                  hilog.error(DOMAIN, TAG, 'terminateSelf失败');
+                context.terminateSelf().catch((e: BusinessError) => {
+                  hilog.error(DOMAIN, TAG, `terminateSelf ：${e.code} ${e.message}`);
                 })
               })
           }

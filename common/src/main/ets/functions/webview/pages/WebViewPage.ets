@@ -1,8 +1,9 @@
-import { Toast } from '../../../utils';
+import { Toast } from '../../../utils/Toast';
 import { webview } from '@kit.ArkWeb';
 import { WebComponent } from '../components/WebComponent';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { GlobalState, RouteManager } from '../..';
+import { GlobalState } from '../../environment/GlobalModel';
+import { RouteManager } from '../../router/RouteManager';
 import { AppStorageV2 } from '@kit.ArkUI';
 
 const DOMAIN: number = 0x0000;
@@ -35,6 +36,8 @@ export struct WebViewPage {
       }
     } catch (e) {
       hilog.error(DOMAIN, TAG, `pop ：${e.code} ${e.message}`);
+      // controller 异常时兜底出栈：onBackPressed 已拦截系统返回，不兜底用户会被困本页
+      RouteManager.getInstance().pop()
     }
   }
 
@@ -106,7 +109,7 @@ export struct WebViewPage {
       if (src && (src.startsWith('http://') || src.startsWith('https://'))) {
         this.src = src
       } else {
-        hilog.error(DOMAIN, TAG, `onReady 缺少有效 src：${src}`);
+        hilog.warn(DOMAIN, TAG, `onReady 缺少有效 src：${src}`);
         Toast.show('无效的网页地址')
         RouteManager.getInstance().pop()
       }

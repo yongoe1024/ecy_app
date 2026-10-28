@@ -5,14 +5,14 @@ const DEMO_WEB: string = 'https://developer.harmonyos.com/'
 
 @ComponentV2
 export struct HomeRouteCard {
-  openFullWebDemo(): void {
+  pushWebDemo(): void {
     RouteManager.getInstance().push({
       url: DEMO_WEB,
       animated: true
     })
   }
 
-  openFullWebDemo1(): void {
+  pushWebDemoNeedLogin(): void {
     RouteManager.getInstance().push({
       url: DEMO_WEB,
       animated: true,
@@ -20,9 +20,9 @@ export struct HomeRouteCard {
     })
   }
 
-  openFullWebDemo2(): void {
+  pushInvalidRoute(): void {
     RouteManager.getInstance().push({
-      url: 'asvdd',
+      url: 'ecy://not/exist',
       animated: true,
     })
   }
@@ -38,13 +38,13 @@ export struct HomeRouteCard {
       })
       .backgroundColor('#7C3AED')
     Button('路由到 Web 页面')
-      .onClick(() => this.openFullWebDemo())
+      .onClick(() => this.pushWebDemo())
       .backgroundColor('#7C3AED')
     Button('需要登录，路由到 Web 页面')
-      .onClick(() => this.openFullWebDemo1())
+      .onClick(() => this.pushWebDemoNeedLogin())
       .backgroundColor('#7C3AED')
-    Button(' 路由到不存在web')
-      .onClick(() => this.openFullWebDemo2())
+    Button('路由到不存在的深链')
+      .onClick(() => this.pushInvalidRoute())
       .backgroundColor('#7C3AED')
   }
 

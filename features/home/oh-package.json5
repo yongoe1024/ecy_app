@@ -1,7 +1,7 @@
 {
   "name": "home",
   "version": "1.0.0",
-  "description": "Please describe the basic information.",
+  "description": "业务 HAR：首页 Common Lab 与我的页。",
   "main": "Index.ets",
   "author": "",
   "license": "Apache-2.0",

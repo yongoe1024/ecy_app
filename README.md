@@ -16,7 +16,7 @@ Manager，可直接作为新项目的起点。
 
 1. 用 DevEco Studio 打开项目。
 2. 选择 `entry` 模块运行到模拟器或真机。
-3. 首页「Common Lab」以卡片形式演示了下列全部能力，是各 Manager 的活文档——对照 `features/home` 源码即可学习标准用法。
+3. 首页「Common Lab」以卡片形式演示了下列能力，是各 Manager 的活文档——对照 `features/home` 源码即可学习标准用法；WebView 组件经「路由与页面跳转」卡片（跳转 Web 页）演示。
 
 > **统一约定**：所有能力都从 `common` 模块导入（`import { XxxManager } from 'common'`）。
 > 业务能力为单例，用 `XxxManager.getInstance()` 获取；`PreferenceManager` / `PermissionManager` / `TimeHelper` /
@@ -29,7 +29,7 @@ Manager，可直接作为新项目的起点。
 | 网络请求      | `NetManager`         | `request` · `upload` · `download`               |
 | 用户与登录     | `UserManager`        | `login` · `logout` · `getToken` · `getUserInfo` |
 | 本地存储      | `PreferenceManager`  | `getSync` · `putSync` · `deleteSync`            |
-| 环境切换      | `EnvironmentManager` | `getEnv` · `getBaseUrl` · `setEnv`              |
+| 环境切换      | `EnvironmentManager` | `getEnv` · `getEnvConfig` · `setEnv`           |
 | 路由导航      | `RouteManager`       | `push` · `pop` · `popTo`                        |
 | WebView   | `WebComponent`       | 组件，必填 `src`                                     |
 | 权限申请      | `PermissionManager`  | `requestPermissions`                            |
@@ -72,15 +72,14 @@ await NetManager.getInstance().download(context, { url, filePath })
 ```ts
 import { UserManager } from 'common'
 
-// 登录 / 登出（失败 reject）
+// 登录（失败 reject）；登出不抛（持久化清理失败仅记日志）
 try {
   await UserManager.getInstance().login('13800138000', '1234')
   await UserManager.getInstance().logout()
 } catch (e) { /* 失败处理 */ }
 
-// Token（同步、持久化）
-UserManager.getInstance().setToken('xxx')            // 写失败会抛出
-const token = UserManager.getInstance().getToken()   // 无 token 返回 ''
+// Token 信息（未登录返回 undefined）；accessToken 由请求拦截器自动携带，无需手动设置
+const tokenInfo = UserManager.getInstance().getToken()
 
 // 用户信息（懒加载，未登录返回 undefined）
 const info = await UserManager.getInstance().getUserInfo()
@@ -94,7 +93,7 @@ UserManager.getInstance().registerListener({
 })
 ```
 
-> 脚手架内置 **mock 登录**（返回固定 token）。接入真实后端时，把 `UserManager.login` 里被注释的请求打开即可。
+> 登录 / 获取用户信息走真实接口（`common` 的 `UserApi`：`login` / `getUserInfo`）；当前 baseUrl 为占位域名，接入真实后端前登录会失败。
 
 ### 本地存储 · PreferenceManager
 
@@ -110,14 +109,14 @@ try {
 ### 环境切换 · EnvironmentManager
 
 ```ts
-import { EnvironmentManager, EnvEnum } from 'common'
+import { EnvironmentManager } from 'common'
 
-const env = EnvironmentManager.getInstance().getEnv()         // 当前环境
-const baseUrl = EnvironmentManager.getInstance().getBaseUrl()  // 当前 baseURL
-EnvironmentManager.getInstance().setEnv(EnvEnum.TEST)          // 切换并重启应用
+const env = EnvironmentManager.getInstance().getEnv()                          // 当前环境
+const baseUrl = EnvironmentManager.getInstance().getEnvConfig().baseUrl        // 当前 baseURL
+EnvironmentManager.getInstance().setEnv('TEST')                                // 切换并重启应用
 ```
 
-> 环境地址在 `EnvironmentManager.ets` 顶部配置；生产 / 测试为占位地址，需替换为真实域名。
+> 环境地址在 `EnvConfig.ets` 的 `envConfig` 中配置；三个环境均为占位地址，需替换为真实域名。
 
 ### 路由导航 · RouteManager
 
@@ -173,11 +172,10 @@ import { MediaManager, PlayMode } from 'common'
 
 const player = await MediaManager.create(getContext(this), {
   mediaList: ['https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'],
-  playMode: PlayMode.SINGLE,
-  onChange: (state) => { /* index / time / duration / isPlay */ }
-})
+  playMode: PlayMode.SINGLE
+}, (state) => { /* index / time / duration / isPlay */ })
 
-await player.setAndPlay(0)  // 加载指定索引并自动起播（失败 reject）
+await player.setAndPlay(0)  // 加载指定索引并自动起播（链路失败仅记日志，不 reject）
 await player.play()
 await player.pause()
 player.release()               // 组件销毁时务必释放
@@ -219,15 +217,17 @@ Column().width(Breakpoint.ofWidth(
 
 ## 错误处理约定
 
-按方法所在「层」决定如何处理返回与错误——照下表写即可。脚手架自身抛出 / reject 的错误统一为 `AppError`（继承 `Error`、带
-`code`）；底层 SDK 错误以 `BusinessError` 透传。两者都可读 `e.code` / `e.message`。
+按方法所在「层」决定如何处理返回与错误——照下表写即可。脚手架自身抛出 / reject 的错误统一为 `Error`（自定义异常不带
+`code`；由系统异常包装而来的，底层 `code` 已并入 `message`）。底层 SDK 错误以 `BusinessError` 透传，可读 `e.code` / `e.message`。
 
 | 层         | 代表方法                                             | 失败时                                           | 你该怎么做                    |
 |-----------|--------------------------------------------------|-----------------------------------------------|--------------------------|
-| 读查询（同步）   | `getToken` · `getEnv`                            | 记日志，返回安全默认值（`''`/`false`/`DEV`）               | 直接用返回值                   |
-| 写变更（同步）   | `putSync` · `deleteSync` · `setToken` · `setEnv` | **抛异常**                                       | `try / catch`            |
+| 读查询（同步）   | `getToken` · `getEnv`                            | 记日志，返回安全默认值（`undefined`/`false`/`'DEV'`）        | 直接用返回值                   |
+| 写变更（同步）   | `putSync` · `deleteSync`                        | **抛异常**                                       | `try / catch`            |
+| 会话登出      | `logout`                                          | 不抛：内存先清并通知；持久化删除失败仅记日志（残留 token 下次冷启动恢复）        | 直接调用                     |
+| 环境切换      | `setEnv`                                         | 不抛：失败记日志，重启失败 Toast 提示手动重启                    | 直接调用                     |
 | 网络        | `request` · `upload` · `download`                | 有响应即 resolve（即使 `code !== 200`）；仅网络/超时 reject | 先查 `res.code`，再 `catch`  |
-| 领域异步      | `login` · `LocationManager.*` · `MediaManager.*` | `reject(AppError)`                            | `try/catch` 或 `.catch`   |
+| 领域异步      | `login` · `LocationManager.*` · `MediaManager.*` | 自定义失败 `reject(Error)`；底层 SDK 错误透传 `BusinessError` | `try/catch` 或 `.catch`   |
 | 状态查询（异步）  | `getUserInfo` · `refreshUserInfo`                | `undefined` ＝ 未登录；出错才 reject                  | 先判 `undefined`，再 `catch` |
 | 路由（UI 命令） | `push` · `pop*`                                  | 只记日志 / Toast，**不抛**                           | 直接调用                     |
 
@@ -260,18 +260,19 @@ ecy_app
 | 页面          | 路由                 | 说明                                  |
 |-------------|--------------------|-------------------------------------|
 | PrivacyPage | —（组件，`Index` 条件渲染） | 隐私同意页，首次启动显示                        |
-| Index       | `pages/Index`      | 导航容器（`Navigation` + `NavPathStack`） |
+| Index       | `pages/Index`      | 导航容器（`Navigation` + `NavPathStack`，以 `ecy://entry/main` 为首页目的地） |
 | Main        | `ecy://entry/main` | 底部 Tab 主页面（首页 / 购物 / 我的）            |
 | WebViewPage | `ecy://common/web` | 通用 WebView，打开 http 链接时自动进入          |
 | LoginPage   | `ecy://mine/login` | 登录页，`needLogin` 未登录时自动跳转            |
+| DebugPage   | `ecy://common/debug` | 调试页（环境切换、用户与 Token 查看），非 PROD 构建经悬浮球进入 |
 
 ---
 
 ## 安全与生产化提示
 
 - **Token 明文存储**：当前存于 Preferences（无加密层），仅适合演示；生产请改用加密存储（HUKS / 关系型数据库加密）。
-- **环境地址**：生产 / 测试为占位（`myprod.com` / `mytest.com`），DEV 为明文 http；上线前替换为真实 HTTPS 域名并配置网络安全策略。
-- **登录为 mock**：`UserManager.login` 返回固定 token，需接入真实后端。
+- **环境地址**：三个环境均为占位（`https://api-{dev,test,prod}.xxx.com`），上线前替换为真实 HTTPS 域名并配置网络安全策略。
+- **登录为演示占位**：`UserApi.login` 已走真实接口，但对响应做占位解析（accessToken/refreshToken 同值、过期时间为假数据）；baseUrl 为占位域名，接入真实后端前登录必然失败。
 - **WebView**：默认开启 JS / DOM 存储，加载不可信外链前请收紧权限。
 
 ---

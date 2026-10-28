@@ -6,7 +6,6 @@ import { HomeNetworkCard } from './components/HomeNetworkCard'
 import { HomeRouteCard } from './components/HomeRouteCard'
 import { HomeStorageCard } from './components/HomeStorageCard'
 import { HomeTimerCard } from './components/HomeTimerCard'
-import { HomeWebPreviewSection } from './components/HomeWebPreviewSection'
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI'
 import { GlobalState } from 'common'
 
