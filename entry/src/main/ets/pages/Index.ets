@@ -24,11 +24,10 @@ struct Index {
     }
   }
 
-  private consumeDeepLink(): void {
-    const params = this.globalState.wantParameters
-    if (params && params.toUrl) {
-      RouteManager.getInstance().pushDeepLink(String(params.toUrl))
-      this.globalState.wantParameters = undefined
+  /** 建立首页根：栈空时将 ENTRY_MAIN 压为 [0]（Navigation 内容区为空白根，正常流程不露面） */
+  private ensureRootPage(): void {
+    if (RouteManager.getInstance().getStack().size() === 0) {
+      RouteManager.getInstance().push({ url: RouteTable.ENTRY_MAIN })
     }
   }
 
@@ -39,17 +38,16 @@ struct Index {
         PrivacyPage({
           onAgreed: () => {
             this.agreed = true
-            this.consumeDeepLink()
           }
         })
       } else {
-        // Navigation 以 ecy://entry/main 为首页目的地（router_map 注册的 Main）渲染首屏；
-        // 二级页（Login/Web/深链）经路由栈压在首页之上
-        Navigation(RouteManager.getInstance().getStack(), { name: RouteTable.ENTRY_MAIN }) {
+        // 根页面 [0] 在 onAppear 建立（onAgreed 切换后 Navigation 首次挂载也会触发）；
+        // 冷启动深链由 Main 挂载后消费，热启动深链经 onNewWant 处理
+        Navigation(RouteManager.getInstance().getStack()) {
         }
         .mode(NavigationMode.Stack)
         .onAppear(() => {
-          this.consumeDeepLink()
+          this.ensureRootPage()
         })
       }
       // 屏幕最顶层的调试悬浮球：不随启动分流/路由页切换消失。

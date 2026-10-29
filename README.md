@@ -125,7 +125,7 @@ import { RouteManager, RouteTable } from 'common'
 
 RouteManager.getInstance().push({ url: RouteTable.ENTRY_MAIN })              // 应用内页面
 RouteManager.getInstance().push({ url: 'https://developer.harmonyos.com/' }) // http 自动用 WebView 打开
-RouteManager.getInstance().push({ url: 'ecy://some/page', needLogin: true }) // 未登录先跳登录页
+RouteManager.getInstance().push({ url: 'ecy://some/page' })                  // 深链页面
 RouteManager.getInstance().pop()            // 返回
 RouteManager.getInstance().popTo('PageA')   // 返回到指定页
 ```
@@ -250,7 +250,7 @@ ecy_app
 1. `EntryStage` 创建全局状态 `GlobalState`（`AppStorageV2`）。
 2. `EntryAbility.onWindowStageCreate` 固定加载 `Index`；`Index` 依据首选项 `agreePrivacy` 条件渲染：未同意 → `PrivacyPage`
    组件，已同意 → `Navigation` 主界面。
-3. 深链（`want.parameters.toUrl`）在隐私同意后、进入 `Index` 时消费；热启动经 `onNewWant` 处理。
+3. 深链（`want.parameters.toUrl`）在隐私同意后、首页 [0]（Main）挂载时消费；热启动经 `onNewWant` 处理。
 
 > 当前未注册外部 `ecy://` scheme，深链仅来自**应用内部** want 传参；如需支持外部应用 / 浏览器唤起，参见
 `entry/src/main/module.json5` 中 `skills` 的注释。
@@ -260,10 +260,10 @@ ecy_app
 | 页面          | 路由                 | 说明                                  |
 |-------------|--------------------|-------------------------------------|
 | PrivacyPage | —（组件，`Index` 条件渲染） | 隐私同意页，首次启动显示                        |
-| Index       | `pages/Index`      | 导航容器（`Navigation` + `NavPathStack`，以 `ecy://entry/main` 为首页目的地） |
+| Index       | `pages/Index`      | 导航容器（`Navigation` + `NavPathStack`）；启动时将 `ecy://entry/main` 压栈为首页 [0]，首页 2 秒内双击返回退出 |
 | Main        | `ecy://entry/main` | 底部 Tab 主页面（首页 / 购物 / 我的）            |
 | WebViewPage | `ecy://common/web` | 通用 WebView，打开 http 链接时自动进入          |
-| LoginPage   | `ecy://mine/login` | 登录页，`needLogin` 未登录时自动跳转            |
+| LoginPage   | `ecy://mine/login` | 登录页（普通页面，业务自行决定何时跳入）      |
 | DebugPage   | `ecy://common/debug` | 调试页（环境切换、用户与 Token 查看），非 PROD 构建经悬浮球进入 |
 
 ---

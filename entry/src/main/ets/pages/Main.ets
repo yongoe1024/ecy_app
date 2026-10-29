@@ -1,4 +1,4 @@
-import { GlobalState } from 'common';
+import { GlobalState, RouteManager } from 'common';
 import { AppStorageV2 } from '@kit.ArkUI';
 import { Home, Mine } from 'home';
 
@@ -8,8 +8,8 @@ export function MainBuilder() {
 }
 
 /**
- * 路由表入口（ecy://entry/main，见 entry 的 router_map.json）：
- * Navigation 的首页目的地（Index 内容区为空，首屏由本页渲染），深链/跳转时也作为 NavDestination 压栈复用。
+ * 底部 Tab 主页面（ecy://entry/main，见 entry 的 router_map.json）：
+ * 启动时经路由压栈作为首页 [0]（见 Index.ensureRootPage）；返回被拦截，双击退出应用。
  */
 @ComponentV2
 struct Main {
@@ -77,6 +77,18 @@ struct Main {
       .backgroundColor('#FFFFFF')
     }
     .hideTitleBar(true)
+    // 路由操作（冷启动深链消费）待本页显示后再执行，避免与首页入场转场叠加；消费后置空防重复
+    .onAppear(() => {
+      const params = this.globalState.wantParameters
+      if (params && params.toUrl) {
+        RouteManager.getInstance().pushDeepLink(String(params.toUrl))
+        this.globalState.wantParameters = undefined
+      }
+    })
+    // 拦截返回（返回键与侧滑均走此处）：阻止 pop 露出 Navigation 空白根页面；2 秒双击退出
+    .onBackPressed(() => {
+      return RouteManager.getInstance().handleBackPress()
+    })
 
   }
 }

@@ -12,14 +12,6 @@ export struct HomeRouteCard {
     })
   }
 
-  pushWebDemoNeedLogin(): void {
-    RouteManager.getInstance().push({
-      url: DEMO_WEB,
-      animated: true,
-      needLogin: true
-    })
-  }
-
   pushInvalidRoute(): void {
     RouteManager.getInstance().push({
       url: 'ecy://not/exist',
@@ -39,9 +31,6 @@ export struct HomeRouteCard {
       .backgroundColor('#7C3AED')
     Button('路由到 Web 页面')
       .onClick(() => this.pushWebDemo())
-      .backgroundColor('#7C3AED')
-    Button('需要登录，路由到 Web 页面')
-      .onClick(() => this.pushWebDemoNeedLogin())
       .backgroundColor('#7C3AED')
     Button('路由到不存在的深链')
       .onClick(() => this.pushInvalidRoute())

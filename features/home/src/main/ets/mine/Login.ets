@@ -5,24 +5,13 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 const DOMAIN: number = 0x0000;
 const TAG: string = 'LoginPage';
 
-interface LoginPageParams {
-  targetPage?: string
-  targetParams?: Record<string, ESObject>
-}
-
-interface LoginSuccessResult {
-  loginSuccess: boolean
-  targetPage: string
-  targetParams?: Record<string, ESObject>
-}
-
 @Builder
 export function LoginPageBuilder() {
   LoginPage()
 }
 
 /**
- * 登录演示页：覆盖 UserManager.login 调用与登录后 popResult 回传目标页。
+ * 登录演示页：覆盖 UserManager.login 的调用。
  * 注：需配合真实后端 login 接口，未联通后端时会走失败提示。
  */
 @ComponentV2
@@ -31,8 +20,6 @@ export struct LoginPage {
   @Local phone: string = ''
   @Local code: string = ''
   @Local loading: boolean = false
-  @Local targetPage: string = ''
-  targetParams?: Record<string, ESObject>
 
   async doLogin(): Promise<void> {
     if (!this.phone || !this.code) {
@@ -43,18 +30,7 @@ export struct LoginPage {
     try {
       await UserManager.getInstance().login(this.phone, this.code)
       Toast.show('登录成功')
-      if (this.targetPage) {
-        let result: LoginSuccessResult = {
-          loginSuccess: true,
-          targetPage: this.targetPage
-        }
-        if (this.targetParams) {
-          result.targetParams = this.targetParams
-        }
-        RouteManager.getInstance().popResult(result)
-      } else {
-        RouteManager.getInstance().pop()
-      }
+      RouteManager.getInstance().pop()
     } catch (e) {
       hilog.error(DOMAIN, TAG, `login ：${e?.message}`);
       Toast.show('登录失败，请检查网络或账号')
@@ -120,13 +96,5 @@ export struct LoginPage {
       .padding({ top: this.globalState.topRectHeight })
     }
     .hideTitleBar(true)
-    .onReady((context: NavDestinationContext) => {
-      const params = context.pathInfo.param as LoginPageParams
-      const targetPage = params?.targetPage
-      if (targetPage) {
-        this.targetPage = targetPage
-      }
-      this.targetParams = params?.targetParams
-    })
   }
 }

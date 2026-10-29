@@ -1,7 +1,8 @@
 import { Toast } from '../../utils/Toast';
 import { RouterParams } from './RouterModel';
 import { RouteTable } from './RouteTable';
-import { UserManager } from '../user/UserManager';
+import { GlobalState } from '../environment/GlobalModel';
+import { AppStorageV2 } from '@kit.ArkUI';
 import { uri } from '@kit.ArkTS';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -9,23 +10,14 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 const DOMAIN: number = 0x0000;
 const TAG: string = 'RouteManager';
 
-interface LoginPopResult {
-  loginSuccess?: boolean
-  targetPage?: string
-  targetParams?: Record<string, ESObject>
-}
-
-interface LoginRouteParams {
-  targetPage: string
-  targetParams?: Record<string, ESObject>
-}
-
 /**
  * 路由管理类。
  */
 export class RouteManager {
   private static instance: RouteManager
   private pageStack: NavPathStack = new NavPathStack()
+  // 首页返回双击计时（毫秒）
+  private lastBackTime: number = 0
 
   public static getInstance(): RouteManager {
     if (!RouteManager.instance) {
@@ -83,33 +75,26 @@ export class RouteManager {
     this.push({ url })
   }
 
-  /** 跳转；url 为 http(s) 链接时经 COMMON_WEB 打开；needLogin 未登录时先经登录页 */
-  public push(options: RouterParams): void {
-    // 需要登录：未登录时先跳登录页，登录成功后再导向原目标页面
-    if (options?.needLogin && !UserManager.getInstance().getToken()) {
-      const loginParams: LoginRouteParams = {
-        targetPage: options.url
-      }
-      if (options.params) {
-        loginParams.targetParams = options.params
-      }
-      this.pageStack?.pushDestinationByName(RouteTable.MINE_LOGIN, loginParams, (popInfo: PopInfo) => {
-        const result = popInfo.result as LoginPopResult
-        if (result?.loginSuccess && result.targetPage) {
-          this.push({
-            url: result.targetPage,
-            params: result.targetParams,
-            animated: options.animated,
-            onPop: options.onPop
-          })
-        }
-      }, options.animated)
-        .catch((e: BusinessError) => {
-          hilog.error(DOMAIN, TAG, `push login ：${e.code} ${e.message}`);
-          Toast.show('登录页面不存在')
-        })
-      return
+  /**
+   * 首页（栈 [0] = Main，经 onBackPressed 调用）返回处理：恒返回 true 拦截，
+   * 防止 pop 后露出 Navigation 空白根页面；2 秒内双击退出应用，首次按提示。
+   */
+  handleBackPress(): boolean {
+    const now = Date.now()
+    if (now - this.lastBackTime < 2000) {
+      const context = AppStorageV2.connect(GlobalState)!.uiAbilityContext
+      context?.terminateSelf().catch((e: BusinessError) => {
+        hilog.error(DOMAIN, TAG, `terminateSelf ：${e.code} ${e.message}`);
+      })
+    } else {
+      Toast.show('再按一次退出程序')
     }
+    this.lastBackTime = now
+    return true
+  }
+
+  /** 跳转；url 为 http(s) 链接时经 COMMON_WEB 打开 */
+  public push(options: RouterParams): void {
     // http 链接经内置 WebView 打开
     if (options.url.startsWith('http://') || options.url.startsWith('https://')) {
       this.pageStack?.pushDestinationByName(RouteTable.COMMON_WEB, { src: options.url }, (popInfo: PopInfo) => {
