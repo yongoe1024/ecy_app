@@ -94,7 +94,6 @@ export struct DebugPage {
     .border({ width: { bottom: 0.5 }, color: '#F0F1F5' })
   }
 
-
   /** 会话与 token 展示板（调试用：核对登录态/身份/令牌，不对外发布） */
   @Builder
   sessionBoard() {
@@ -133,7 +132,6 @@ export struct DebugPage {
     .backgroundColor('#FFFFFF')
     .borderRadius(12)
   }
-
 
   @Builder
   navBar() {
@@ -193,6 +191,46 @@ export struct DebugPage {
     })
   }
 
+  /** 路由栈调试板：点击经 hilog（TAG=RouteManager）逐层输出页面名与参数 */
+  @Builder
+  routeStackCard() {
+    Column({ space: 2 }) {
+      Text('路由栈')
+        .fontSize(14)
+        .fontWeight(FontWeight.Medium)
+        .fontColor('#172033')
+        .width('100%')
+        .padding({ bottom: 6 })
+
+      Button('打印路由栈')
+        .fontSize(14)
+        .fontColor('#FFFFFF')
+        .backgroundColor('#2b6aff')
+        .borderRadius(8)
+        .height(40)
+        .width('100%')
+        .margin({ top: 10 })
+        .onClick(() => {
+          const list = RouteManager.getInstance().getStack().getPathStack()
+          hilog.info(DOMAIN, TAG, `路由栈 size=${list.length}`)
+          list.forEach((item, index) => {
+            let str = ''
+            try {
+              str = JSON.stringify(item)
+            } catch (e) {
+              str = '<参数不可序列化>'
+            }
+            hilog.info(DOMAIN, TAG, `[${index}] ${str}`)
+          })
+          Toast.show('已打印，见日志')
+        })
+    }
+    .padding(16)
+    .width('100%')
+    .backgroundColor('#FFFFFF')
+    .borderRadius(12)
+  }
+
   build() {
     NavDestination() {
       // 顶部避让：最外层统一 padding（状态栏高度取自 GlobalState.topRectHeight）
@@ -209,6 +247,8 @@ export struct DebugPage {
               this.envItem(env)
             })
             this.sessionBoard()
+
+            this.routeStackCard()
           }
           .padding(16)
           .width('100%')
